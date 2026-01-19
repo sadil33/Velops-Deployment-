@@ -139,8 +139,7 @@ const WorkflowsTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-workflow',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-workflow`,
                             formData,
                             {
                                 headers: {
