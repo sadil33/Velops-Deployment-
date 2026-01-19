@@ -99,8 +99,7 @@ const WorkflowsTab = () => {
             const workflowArray = workflowNames.split(',').map(name => name.trim());
 
             await axios.post(
-                'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                // ... usage example: `${apiUrl}/api/...`/api/ion-workflows-activate',
+                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-workflows-activate`,
                 { workflows: workflowArray },
                 {
                     params: {
@@ -383,8 +382,7 @@ const DataflowsTab = () => {
             const dataflowArray = dataflowNames.split(',').map(name => name.trim());
 
             await axios.post(
-                'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                // ... usage example: `${apiUrl}/api/...`/api/ion-dataflows-activate',
+                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-dataflows-activate`,
                 { dataflows: dataflowArray },
                 {
                     params: {
@@ -424,8 +422,7 @@ const DataflowsTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-dataflows',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-dataflows`,
                             formData,
                             {
                                 headers: {
@@ -652,8 +649,7 @@ const ConnectionPointTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-connectionpoints',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-connectionpoints`,
                             formData,
                             {
                                 headers: {
@@ -820,8 +816,7 @@ const BusinessRulesTab = () => {
             const ruleArray = ruleNames.split(',').map(name => name.trim());
 
             const response = await axios.post(
-                'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                // ... usage example: `${apiUrl}/api/...`/api/ion-businessrules-approve',
+                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-businessrules-approve`,
                 { rules: ruleArray },
                 {
                     params: {
@@ -861,8 +856,7 @@ const BusinessRulesTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-businessrules',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-businessrules`,
                             formData,
                             {
                                 headers: {
@@ -1114,8 +1108,7 @@ const ScriptingTab = () => {
             });
 
             const response = await axios.put(
-                'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                // ... usage example: `${apiUrl}/api/...`/api/ion-scripts-approve',
+                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-scripts-approve`,
                 scriptArray,  // Send array directly, not {scripts: scriptArray}
                 {
                     params: {
@@ -1156,8 +1149,7 @@ const ScriptingTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-libraries',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-libraries`,
                             formData,
                             {
                                 headers: {
@@ -1208,8 +1200,7 @@ const ScriptingTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-scripts',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-scripts`,
                             formData,
                             {
                                 headers: {
@@ -1565,8 +1556,7 @@ const ObjectSchemasTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            'const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                            // ... usage example: `${apiUrl}/api/...`/api/ion-object-schemas',
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-object-schemas`,
                             formData,
                             {
                                 headers: {
