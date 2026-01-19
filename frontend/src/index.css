@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    @apply bg-slate-900 text-slate-50 antialiased;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-600/50 rounded-full hover:bg-slate-500/80 transition-colors;
+}
+
+/* Premium Dark Animated Background */
+.animated-bg {
+    background: linear-gradient(135deg,
+            #0f172a 0%,
+            /* Dark Slate / Black */
+            #1e1b4b 50%,
+            /* Deep Indigo */
+            #33050c 100%
+            /* Deep Infor Red Hint */
+        );
+    background-size: 200% 200%;
+    animation: bgShift 20s ease infinite;
+}
+
+@keyframes bgShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Glassmorphism Utilities - Updated for Dark Theme */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-sidebar {
+    background: rgba(15, 23, 42, 0.85);
+    /* Dark slate semi-transparent */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Infor Red Utility */
+.text-infor-red {
+    color: #D50032;
+}
+
+.bg-infor-red {
+    background-color: #D50032;
+}
