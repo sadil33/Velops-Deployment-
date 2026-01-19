@@ -612,9 +612,7 @@ app.put('/api/ion-scripts-approve', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend proxy server running on http://localhost:${PORT}`);
-});
+
 
 // IDM Deployment Endpoint
 app.post('/api/idm-deploy', upload.single('file'), async (req, res) => {
@@ -1519,4 +1517,26 @@ app.get('/api/users/activity', (req, res) => {
   });
 
   res.json({ users });
+});
+
+// Keep Alive Logic (Prevents Render Free Tier from Sleeping)
+const keepAlive = () => {
+  const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  // Ping the backend every 14 minutes (Render sleeps after 15)
+  if (process.env.RENDER_EXTERNAL_URL) {
+    console.log(`[KeepAlive] Setting up self-ping to ${url}`);
+    setInterval(async () => {
+      try {
+        await axios.get(`${url}/api/users/activity`); // Lightweight endpoint
+        console.log(`[KeepAlive] Ping sent to ${url}`);
+      } catch (error) {
+        console.error(`[KeepAlive] Ping failed: ${error.message}`);
+      }
+    }, 14 * 60 * 1000); // 14 Minutes
+  }
+};
+
+app.listen(PORT, () => {
+  console.log(`Backend proxy server running on http://localhost:${PORT}`);
+  keepAlive();
 });
