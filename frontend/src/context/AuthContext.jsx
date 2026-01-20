@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
@@ -9,9 +9,21 @@ const getStoredCount = (key) => {
     return stored ? parseInt(stored, 10) : 0;
 };
 
+// Helper to get stored user session
+const getStoredUser = () => {
+    try {
+        const stored = localStorage.getItem('infor_session');
+        return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+        console.error("Failed to parse stored session", e);
+        return null;
+    }
+};
+
 export const AuthProvider = ({ children }) => {
     // User session: { tenantUrl, token, userData }
-    const [user, setUser] = useState(null);
+    // Initialize from localStorage to persist across refreshes
+    const [user, setUser] = useState(getStoredUser);
 
     // Requirements: Array of strings (Role names extracted from file)
     const [requirements, setRequirements] = useState([]);
@@ -21,7 +33,10 @@ export const AuthProvider = ({ children }) => {
     const [deploymentCount, setDeploymentCount] = useState(() => getStoredCount('infor_deployment_count'));
 
     const login = async (tenantUrl, token, userData) => {
-        setUser({ tenantUrl, token, userData });
+        const sessionData = { tenantUrl, token, userData };
+        setUser(sessionData);
+        // Persist session
+        localStorage.setItem('infor_session', JSON.stringify(sessionData));
 
         // Increment login count
         const newCount = loginCount + 1;
@@ -52,6 +67,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         setRequirements([]);
+        localStorage.removeItem('infor_session');
     };
 
     const incrementDeployments = () => {
