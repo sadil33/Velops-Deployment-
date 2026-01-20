@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { API_BASE_URL } from '../utils/api';
 
 const Login = () => {
     const [tenantUrl, setTenantUrl] = useState('');
@@ -30,7 +31,7 @@ const Login = () => {
             // We always default to the 'me' endpoint for validation login
             const endpoint = 'ifsservice/usermgt/v2/users/me';
 
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,

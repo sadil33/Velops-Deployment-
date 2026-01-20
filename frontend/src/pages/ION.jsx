@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 
 const ION = () => {
     const [activeTab, setActiveTab] = useState('workflows');
@@ -99,7 +100,7 @@ const WorkflowsTab = () => {
             const workflowArray = workflowNames.split(',').map(name => name.trim());
 
             await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-workflows-activate`,
+                `${API_BASE_URL}/api/ion-workflows-activate`,
                 { workflows: workflowArray },
                 {
                     params: {
@@ -139,7 +140,7 @@ const WorkflowsTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-workflow`,
+                            `${API_BASE_URL}/api/ion-workflow`,
                             formData,
                             {
                                 headers: {
@@ -381,7 +382,7 @@ const DataflowsTab = () => {
             const dataflowArray = dataflowNames.split(',').map(name => name.trim());
 
             await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-dataflows-activate`,
+                `${API_BASE_URL}/api/ion-dataflows-activate`,
                 { dataflows: dataflowArray },
                 {
                     params: {
@@ -421,7 +422,7 @@ const DataflowsTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-dataflows`,
+                            `${API_BASE_URL}/api/ion-dataflows`,
                             formData,
                             {
                                 headers: {
@@ -648,7 +649,7 @@ const ConnectionPointTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-connectionpoints`,
+                            `${API_BASE_URL}/api/ion-connectionpoints`,
                             formData,
                             {
                                 headers: {
@@ -815,7 +816,7 @@ const BusinessRulesTab = () => {
             const ruleArray = ruleNames.split(',').map(name => name.trim());
 
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-businessrules-approve`,
+                `${API_BASE_URL}/api/ion-businessrules-approve`,
                 { rules: ruleArray },
                 {
                     params: {
@@ -855,7 +856,7 @@ const BusinessRulesTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-businessrules`,
+                            `${API_BASE_URL}/api/ion-businessrules`,
                             formData,
                             {
                                 headers: {
@@ -1107,7 +1108,7 @@ const ScriptingTab = () => {
             });
 
             const response = await axios.put(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-scripts-approve`,
+                `${API_BASE_URL}/api/ion-scripts-approve`,
                 scriptArray,  // Send array directly, not {scripts: scriptArray}
                 {
                     params: {
@@ -1148,7 +1149,7 @@ const ScriptingTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-libraries`,
+                            `${API_BASE_URL}/api/ion-libraries`,
                             formData,
                             {
                                 headers: {
@@ -1199,7 +1200,7 @@ const ScriptingTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-scripts`,
+                            `${API_BASE_URL}/api/ion-scripts`,
                             formData,
                             {
                                 headers: {
@@ -1555,7 +1556,7 @@ const ObjectSchemasTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-object-schemas`,
+                            `${API_BASE_URL}/api/ion-object-schemas`,
                             formData,
                             {
                                 headers: {

@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 import { Upload, File, CheckCircle2, XCircle, Loader2, Settings, Package, Database } from 'lucide-react';
 
 const IDMDeployment = () => {
@@ -87,7 +88,7 @@ const ImportConfigTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idm-config-import`,
+                            `${API_BASE_URL}/api/idm-config-import`,
                             formData,
                             {
                                 headers: {
@@ -252,7 +253,7 @@ const DeployItemTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idm-deploy`,
+                            `${API_BASE_URL}/api/idm-deploy`,
                             formData,
                             {
                                 headers: {

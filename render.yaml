@@ -25,7 +25,7 @@ services:
         fromService:
           type: web
           name: velops-backend
-          property: url
+          property: host
     routes:
       - type: rewrite
         source: /*

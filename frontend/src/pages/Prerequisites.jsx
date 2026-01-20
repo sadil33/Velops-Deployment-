@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 import { FileText, UploadCloud, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../components/Button';
 
@@ -25,7 +26,7 @@ const Prerequisites = () => {
 
         try {
             // Call our Backend AI Parsing Endpoint
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const res = await axios.post(`${apiUrl}/api/parse`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
