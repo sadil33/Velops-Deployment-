@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../utils/api';
 
 const container = {
     hidden: { opacity: 0 },
@@ -70,7 +69,7 @@ const Dashboard = () => {
     React.useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const apiUrl = API_BASE_URL;
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                 const response = await fetch(`${apiUrl}/api/users/activity`);
                 const data = await response.json();
                 if (data.users) {

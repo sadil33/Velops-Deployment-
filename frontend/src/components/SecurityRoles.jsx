@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../utils/api';
 import { Shield, Loader2, CheckCircle2, XCircle, FileText } from 'lucide-react';
 
 const container = {
@@ -30,7 +29,7 @@ const SecurityRoles = () => {
         const fetchRoles = async () => {
             try {
                 setLoading(true);
-                const apiUrl = API_BASE_URL;
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                 const res = await axios.post(`${apiUrl}/api/proxy`, {
                     tenantUrl: user.tenantUrl,
                     endpoint: 'ifsservice/usermgt/v2/users/me',

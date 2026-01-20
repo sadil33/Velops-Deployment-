@@ -3,7 +3,6 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Ticket, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../utils/api';
 
 const JiraTickets = () => {
     const { user } = useAuth();
@@ -22,7 +21,7 @@ const JiraTickets = () => {
         setJiraResult(null);
 
         try {
-            const apiUrl = API_BASE_URL;
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const response = await axios.post(`${apiUrl}/api/jira/tickets`, jiraForm);
             setJiraResult(response.data);
             setJiraForm({ summary: '', description: '', priority: 'Medium', issuetype: 'Task' });

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from 'react';
 import axios from 'axios';
-import { API_BASE_URL } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -37,7 +36,7 @@ export const AuthProvider = ({ children }) => {
             const email = userData?.response?.userlist?.[0]?.emails?.[0]?.value || '';
             const tenantId = tenantUrl ? new URL(tenantUrl).pathname.split('/').filter(Boolean).pop() : 'Unknown';
 
-            const apiUrl = API_BASE_URL;
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             await axios.post(`${apiUrl}/api/users/activity`, {
                 username,
                 displayName,

@@ -14,9 +14,10 @@ services:
     autoDeploy: true
 
   # Frontend Service
-  - type: web
+  - type: static
     name: velops-frontend
     env: static
+    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -24,7 +25,7 @@ services:
         fromService:
           type: web
           name: velops-backend
-          property: host
+          property: url
     routes:
       - type: rewrite
         source: /*
