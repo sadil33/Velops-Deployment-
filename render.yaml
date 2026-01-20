@@ -14,7 +14,7 @@ services:
     autoDeploy: true
 
   # Frontend Service
-  - type: static
+  - type: site
     name: velops-frontend
     env: static
     plan: free
