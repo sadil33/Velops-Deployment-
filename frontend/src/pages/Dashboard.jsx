@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,7 @@ const item = {
 };
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { user, metrics } = useAuth();
 
     // Tenant Logic
@@ -193,7 +195,10 @@ const Dashboard = () => {
                         Quick Actions
                     </h2>
                     <div className="grid grid-cols-1 gap-4">
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4">
+                        <div
+                            onClick={() => navigate('/dashboard/roles')}
+                            className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
+                        >
                             <div className="p-2 bg-blue-500/20 w-fit rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
                                 <ShieldCheck className="w-5 h-5" />
                             </div>
@@ -202,7 +207,10 @@ const Dashboard = () => {
                                 <p className="text-xs text-slate-400">Validate permissions</p>
                             </div>
                         </div>
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4">
+                        <div
+                            onClick={() => navigate('/dashboard/ion')}
+                            className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
+                        >
                             <div className="p-2 bg-purple-500/20 w-fit rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
                                 <Clock className="w-5 h-5" />
                             </div>
