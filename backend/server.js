@@ -19,6 +19,11 @@ app.post('/api/proxy', async (req, res) => {
     return res.status(400).json({ error: 'Missing tenantUrl or token' });
   }
 
+  // Sanitize token: Remove "Bearer " if present (case-insensitive) to prevent duplication
+  const cleanToken = token.replace(/^Bearer\s+/i, '');
+
+  console.log(`[Proxy] Token received (length: ${token.length}). Using sanitized token.`);
+
   // Construct the full URL
   // Ensure tenantUrl doesn't have a trailing slash if endpoint starts with one, or vice versa.
   // Although the user provided URL has a trailing slash and endpoint doesn't, we'll be safe.
@@ -33,7 +38,7 @@ app.post('/api/proxy', async (req, res) => {
       method: method,
       url: fullUrl,
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${cleanToken}`,
         'Content-Type': 'application/json',
         // Add any other necessary headers here
       },
