@@ -1,11 +1,13 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket } from 'lucide-react';
+import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch } from 'lucide-react';
 import Dashboard from '../pages/Dashboard';
 import SecurityRoles from './SecurityRoles';
 import IDMDeployment from '../pages/IDMDeployment';
 import ION from '../pages/ION';
 import ArtificialIntelligence from '../pages/ArtificialIntelligence';
+import RPA from '../pages/RPA';
+import IDP from '../pages/IDP';
 import JiraTickets from '../pages/JiraTickets';
 
 const SidebarLayout = () => {
@@ -20,8 +22,10 @@ const SidebarLayout = () => {
     const isIDM = currentPath.includes('/idm-deployment');
     const isION = currentPath.includes('/ion');
     const isAI = currentPath.includes('/ai');
+    const isRPA = currentPath.includes('/rpa');
+    const isIDP = currentPath.includes('/idp');
     const isJira = currentPath.includes('/jira');
-    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira;
+    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP;
 
     const handleLogout = () => {
         logout();
@@ -39,7 +43,7 @@ const SidebarLayout = () => {
                     </h1>
                 </div>
 
-                <nav className="flex-1 p-6 space-y-4">
+                <nav className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
                     <NavLink
                         to="/dashboard"
                         end
@@ -94,6 +98,28 @@ const SidebarLayout = () => {
                     >
                         <BrainCircuit className="w-5 h-5" />
                         Artificial Intelligence
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/rpa"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <Bot className="w-5 h-5" />
+                        RPA
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/idp"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <FileSearch className="w-5 h-5" />
+                        IDP
                     </NavLink>
 
                     <NavLink
@@ -152,6 +178,14 @@ const SidebarLayout = () => {
 
                     <div style={{ display: isAI ? 'block' : 'none' }}>
                         <ArtificialIntelligence />
+                    </div>
+
+                    <div style={{ display: isRPA ? 'block' : 'none' }}>
+                        <RPA />
+                    </div>
+
+                    <div style={{ display: isIDP ? 'block' : 'none' }}>
+                        <IDP />
                     </div>
 
                     <div style={{ display: isJira ? 'block' : 'none' }}>

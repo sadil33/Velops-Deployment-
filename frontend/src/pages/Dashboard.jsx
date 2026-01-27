@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap } from 'lucide-react';
+import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap, Copy, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const container = {
@@ -37,6 +37,16 @@ const Dashboard = () => {
 
     const tenantId = getTenantId();
     const userName = user?.userData?.response?.userlist?.[0]?.displayName || 'Administrator';
+    const userId = user?.userId || 'N/A';
+
+    const [copied, setCopied] = React.useState(false);
+
+    const handleCopy = () => {
+        if (userId === 'N/A') return;
+        navigator.clipboard.writeText(userId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const stats = [
         {
@@ -125,6 +135,17 @@ const Dashboard = () => {
                     <p className="text-slate-300 text-lg font-medium max-w-2xl leading-relaxed">
                         You are connected to <span className="text-white font-bold">{tenantId}</span>. Manage your security roles, deployments, and ION workflows with precision.
                     </p>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-slate-400 text-sm font-medium">User ID:</span>
+                        <code className="bg-white/10 px-2 py-1 rounded text-xs text-white font-mono">{userId}</code>
+                        <button
+                            onClick={handleCopy}
+                            className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors border border-white/5"
+                            title="Copy User ID"
+                        >
+                            {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                        </button>
+                    </div>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a] via-[#1e1b4b99] to-infor-red/20 -z-10 bg-size-200 animate-gradient-xy"></div>
             </motion.div>

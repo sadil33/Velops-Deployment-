@@ -33,7 +33,8 @@ export const AuthProvider = ({ children }) => {
     const [deploymentCount, setDeploymentCount] = useState(() => getStoredCount('infor_deployment_count'));
 
     const login = async (tenantUrl, token, userData) => {
-        const sessionData = { tenantUrl, token, userData };
+        const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
+        const sessionData = { tenantUrl, token, userData, userId };
         setUser(sessionData);
         // Persist session
         localStorage.setItem('infor_session', JSON.stringify(sessionData));
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }) => {
             const username = userData?.response?.userlist?.[0]?.userName || 'Unknown';
             const displayName = userData?.response?.userlist?.[0]?.displayName || username;
             const email = userData?.response?.userlist?.[0]?.emails?.[0]?.value || '';
+            const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
             const tenantId = tenantUrl ? new URL(tenantUrl).pathname.split('/').filter(Boolean).pop() : 'Unknown';
 
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -56,6 +58,7 @@ export const AuthProvider = ({ children }) => {
                 username,
                 displayName,
                 email,
+                userId,
                 tenantId
             });
             console.log('[Auth] User activity recorded');

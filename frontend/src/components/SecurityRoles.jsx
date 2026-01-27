@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Loader2, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X } from 'lucide-react';
 
 const container = {
     hidden: { opacity: 0 },
@@ -24,6 +24,7 @@ const SecurityRoles = () => {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchRoles = async () => {
@@ -45,8 +46,9 @@ const SecurityRoles = () => {
                 }
 
             } catch (err) {
-                console.error(err);
-                setError('Failed to fetch security roles.');
+                console.error("Security Roles Fetch Error:", err);
+                const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch security roles.';
+                setError(errorMessage);
             } finally {
                 setLoading(false);
             }
@@ -141,40 +143,72 @@ const SecurityRoles = () => {
 
             {/* SECTION 2: ALL ACTIVE ROLES */}
             <motion.div variants={item} className="space-y-6">
-                <div className="flex items-center gap-4 pl-2">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30">
-                        <Shield className="w-6 h-6" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-2">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30">
+                            <Shield className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black text-white tracking-tight">Active Roles</h2>
+                            <p className="text-slate-400 font-semibold">Total: {groups.length} roles assigned</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-3xl font-black text-white tracking-tight">Active Roles</h2>
-                        <p className="text-slate-400 font-semibold">Total: {groups.length} roles assigned</p>
+
+                    {/* Search Box */}
+                    <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search roles..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="bg-slate-900/50 text-white pl-10 pr-10 py-3 rounded-xl border border-white/10 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none w-full md:w-72 transition-all placeholder:text-slate-500 backdrop-blur-sm"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groups.map((group, index) => (
-                        <motion.div
-                            key={index}
-                            variants={item}
-                            whileHover={{ y: -5, scale: 1.02 }}
-                            className="glass-panel p-6 rounded-2xl border border-white/20 bg-white/5 shadow-lg hover:shadow-2xl hover:shadow-infor-red/20 transition-all duration-300 flex items-start justify-between group cursor-default hover:border-infor-red/40"
-                        >
-                            <div className="w-full">
-                                <h3 className="font-extrabold text-white text-xl group-hover:text-infor-red transition-colors truncate mb-3">
-                                    {group.display}
-                                </h3>
-                                <div className="flex justify-between items-center w-full">
-                                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider bg-white/10 px-3 py-1 rounded-lg border border-white/5">
-                                        {group.type || 'Group'}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Active</span>
-                                        <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
+                    {groups
+                        .filter(group => {
+                            if (!searchTerm) return true;
+                            return (group?.display || '').toLowerCase().includes(searchTerm.toLowerCase());
+                        })
+                        .map((group, index) => (
+                            <motion.div
+                                key={group.display || index}
+                                layout
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                whileHover={{ y: -5, scale: 1.02 }}
+                                className="glass-panel p-6 rounded-2xl border border-white/20 bg-white/5 shadow-lg hover:shadow-2xl hover:shadow-infor-red/20 transition-all duration-300 flex items-start justify-between group cursor-default hover:border-infor-red/40"
+                            >
+                                <div className="w-full">
+                                    <h3 className="font-extrabold text-white text-xl group-hover:text-infor-red transition-colors truncate mb-3" title={group.display}>
+                                        {group.display}
+                                    </h3>
+                                    <div className="flex justify-between items-center w-full">
+                                        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider bg-white/10 px-3 py-1 rounded-lg border border-white/5">
+                                            {group.type || 'Group'}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Active</span>
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse"></div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    ))}
+                            </motion.div>
+                        ))}
                 </div>
             </motion.div>
         </motion.div>

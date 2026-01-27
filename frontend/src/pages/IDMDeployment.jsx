@@ -72,16 +72,26 @@ const ImportConfigTab = () => {
     const { user } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]);
 
-    const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleUpload = async () => {
+        if (selectedFiles.length === 0) return;
 
         setUploading(true);
         setUploadResults([]);
 
         try {
             const results = await Promise.all(
-                acceptedFiles.map(async (file) => {
+                selectedFiles.map(async (file) => {
                     try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -116,12 +126,13 @@ const ImportConfigTab = () => {
             );
 
             setUploadResults(results);
+            setSelectedFiles([]); // Clear queue on success
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
             setUploading(false);
         }
-    }, [user]);
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -158,23 +169,73 @@ const ImportConfigTab = () => {
                         <div className={`p-4 rounded-full transition-colors ${isDragActive ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-slate-400'}`}>
                             <Upload className="w-8 h-8" />
                         </div>
-                        {uploading ? (
-                            <div className="text-center">
-                                <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-3" />
-                                <p className="text-slate-300 font-medium">Importing configurations...</p>
-                            </div>
-                        ) : (
-                            <div className="text-center">
-                                <p className="text-lg font-bold text-slate-200">
-                                    {isDragActive ? "Drop config files here" : "Click to upload or drag and drop"}
-                                </p>
-                                <p className="text-sm text-slate-500 mt-2 font-medium">
-                                    Supports multiple XML files
-                                </p>
-                            </div>
-                        )}
+                        <div className="text-center">
+                            <p className="text-lg font-bold text-slate-200">
+                                {isDragActive ? "Drop config files here" : "Click to upload or drag and drop"}
+                            </p>
+                            <p className="text-sm text-slate-500 mt-2 font-medium">
+                                Supports multiple XML files
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                {/* Selected Files Preview */}
+                <AnimatePresence>
+                    {selectedFiles.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3"
+                        >
+                            <h4 className="font-bold text-slate-300">Ready to Upload</h4>
+                            <div className="grid gap-2">
+                                {selectedFiles.map((file, idx) => (
+                                    <motion.div
+                                        key={`${file.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <File className="w-4 h-4 text-blue-400" />
+                                            <span className="text-sm text-slate-200">{file.name}</span>
+                                            <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleUpload}
+                                    disabled={uploading}
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Importing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            Import {selectedFiles.length} item(s)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
 
             {/* Results */}
@@ -230,6 +291,7 @@ const DeployItemTab = () => {
     const { user, incrementDeployments } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]);
     const [config, setConfig] = useState({
         version: 'claude-3-7-sonnet-20250219-v1:0',
         model: 'CLAUDE',
@@ -237,8 +299,17 @@ const DeployItemTab = () => {
         entityName: 'GenAIPromptTest'
     });
 
-    const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleDeploy = async () => {
+        if (selectedFiles.length === 0) return;
 
         setUploading(true);
         setUploadResults([]);
@@ -246,7 +317,7 @@ const DeployItemTab = () => {
         try {
             let successCount = 0;
             const results = await Promise.all(
-                acceptedFiles.map(async (file) => {
+                selectedFiles.map(async (file) => {
                     try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -289,12 +360,13 @@ const DeployItemTab = () => {
             }
 
             setUploadResults(results);
+            setSelectedFiles([]);
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
             setUploading(false);
         }
-    }, [user, config, incrementDeployments]);
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -395,23 +467,73 @@ const DeployItemTab = () => {
                         <div className={`p-4 rounded-full transition-colors ${isDragActive ? 'bg-red-500/20 text-infor-red' : 'bg-white/5 text-slate-400'}`}>
                             <Upload className="w-8 h-8" />
                         </div>
-                        {uploading ? (
-                            <div className="text-center">
-                                <Loader2 className="w-8 h-8 animate-spin text-infor-red mx-auto mb-3" />
-                                <p className="text-slate-300 font-medium">Deploying files...</p>
-                            </div>
-                        ) : (
-                            <div className="text-center">
-                                <p className="text-lg font-bold text-slate-200">
-                                    {isDragActive ? "Drop files here" : "Click to upload or drag and drop"}
-                                </p>
-                                <p className="text-sm text-slate-500 mt-2 font-medium">
-                                    Supports multiple files
-                                </p>
-                            </div>
-                        )}
+                        <div className="text-center">
+                            <p className="text-lg font-bold text-slate-200">
+                                {isDragActive ? "Drop files here" : "Click to upload or drag and drop"}
+                            </p>
+                            <p className="text-sm text-slate-500 mt-2 font-medium">
+                                Supports multiple files
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                {/* Selected Files Preview */}
+                <AnimatePresence>
+                    {selectedFiles.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3"
+                        >
+                            <h4 className="font-bold text-slate-300">Ready to Deploy</h4>
+                            <div className="grid gap-2">
+                                {selectedFiles.map((file, idx) => (
+                                    <motion.div
+                                        key={`${file.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <File className="w-4 h-4 text-infor-red" />
+                                            <span className="text-sm text-slate-200">{file.name}</span>
+                                            <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleDeploy}
+                                    disabled={uploading}
+                                    className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deploying...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            Deploy {selectedFiles.length} item(s)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </motion.div>
 
             {/* Results */}

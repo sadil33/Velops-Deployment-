@@ -82,6 +82,7 @@ const WorkflowsTab = () => {
     const { user } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]); // State for dropped files
 
     // Activation state
     const [workflowNames, setWorkflowNames] = useState('');
@@ -125,15 +126,24 @@ const WorkflowsTab = () => {
         }
     };
 
-    const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleDeploy = async () => {
+        if (selectedFiles.length === 0) return;
 
         setUploading(true);
         setUploadResults([]);
 
         try {
             const results = await Promise.all(
-                acceptedFiles.map(async (file) => {
+                selectedFiles.map(async (file) => {
                     try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -168,12 +178,13 @@ const WorkflowsTab = () => {
             );
 
             setUploadResults(results);
+            setSelectedFiles([]); // Clear queue
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
             setUploading(false);
         }
-    }, [user]);
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -211,7 +222,7 @@ const WorkflowsTab = () => {
                         {activating ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Activating...
+                                activating...
                             </span>
                         ) : (
                             'Activate'
@@ -284,28 +295,76 @@ const WorkflowsTab = () => {
                         transition={{ type: "spring", stiffness: 300 }}
                         className="flex flex-col items-center gap-4"
                     >
-                        {uploading ? (
-                            <>
-                                <Loader2 className="w-16 h-16 text-purple-500 animate-spin" />
-                                <p className="text-lg font-semibold text-purple-600">Deploying workflows...</p>
-                            </>
-                        ) : (
-                            <>
-                                <div className="w-20 h-20 bg-white/5 text-infor-red rounded-full flex items-center justify-center mb-2">
-                                    <Upload className="w-10 h-10" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-bold text-slate-200">
-                                        {isDragActive ? "Drop workflow files here..." : "Drag & drop workflow files"}
-                                    </p>
-                                    <p className="text-sm text-slate-500 mt-2 font-medium">
-                                        or click to browse (.txt files with JSON payloads)
-                                    </p>
-                                </div>
-                            </>
-                        )}
+                        <div className="w-20 h-20 bg-white/5 text-infor-red rounded-full flex items-center justify-center mb-2">
+                            <Upload className="w-10 h-10" />
+                        </div>
+                        <div>
+                            <p className="text-lg font-bold text-slate-200">
+                                {isDragActive ? "Drop workflow files here..." : "Drag & drop workflow files"}
+                            </p>
+                            <p className="text-sm text-slate-500 mt-2 font-medium">
+                                or click to browse (.txt files with JSON payloads)
+                            </p>
+                        </div>
                     </motion.div>
                 </div>
+
+                {/* Selected Files Preview */}
+                <AnimatePresence>
+                    {selectedFiles.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3"
+                        >
+                            <h4 className="font-bold text-slate-300">Ready to Deploy</h4>
+                            <div className="grid gap-2">
+                                {selectedFiles.map((file, idx) => (
+                                    <motion.div
+                                        key={`${file.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <File className="w-4 h-4 text-infor-red" />
+                                            <span className="text-sm text-slate-200">{file.name}</span>
+                                            <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleDeploy}
+                                    disabled={uploading}
+                                    className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deploying...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            Deploy {selectedFiles.length} item(s)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Results */}
                 <AnimatePresence>
@@ -364,6 +423,7 @@ const DataflowsTab = () => {
     const { user } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]); // Selected files state
 
     // Activation state
     const [dataflowNames, setDataflowNames] = useState('');
@@ -407,15 +467,24 @@ const DataflowsTab = () => {
         }
     };
 
-    const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleDeploy = async () => {
+        if (selectedFiles.length === 0) return;
 
         setUploading(true);
         setUploadResults([]);
 
         try {
             const results = await Promise.all(
-                acceptedFiles.map(async (file) => {
+                selectedFiles.map(async (file) => {
                     try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -450,12 +519,13 @@ const DataflowsTab = () => {
             );
 
             setUploadResults(results);
+            setSelectedFiles([]); // Clear
         } catch (error) {
             console.error('Dataflows upload error:', error);
         } finally {
             setUploading(false);
         }
-    }, [user]);
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -584,47 +654,105 @@ const DataflowsTab = () => {
                     </motion.div>
                 </div>
 
-                {/* Upload Results */}
+                {/* Selected Files Preview */}
                 <AnimatePresence>
-                    {uploadResults.length > 0 && (
+                    {selectedFiles.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="space-y-2"
+                            className="space-y-3"
                         >
-                            {uploadResults.map((result, index) => (
-                                <motion.div
-                                    key={result.filename}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className={`
-                                        p-4 rounded-xl border flex items-center gap-3 backdrop-blur-sm
-                                        ${result.status === 'success'
-                                            ? 'bg-emerald-500/10 border-emerald-500/20'
-                                            : 'bg-red-500/10 border-red-500/20'
-                                        }
-                                    `}
+                            <h4 className="font-bold text-slate-300">Ready to Deploy</h4>
+                            <div className="grid gap-2">
+                                {selectedFiles.map((file, idx) => (
+                                    <motion.div
+                                        key={`${file.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <File className="w-4 h-4 text-infor-red" />
+                                            <span className="text-sm text-slate-200">{file.name}</span>
+                                            <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleDeploy}
+                                    disabled={uploading}
+                                    className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {result.status === 'success' ? (
-                                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deploying...
+                                        </>
                                     ) : (
-                                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            Deploy {selectedFiles.length} item(s)
+                                        </>
                                     )}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-semibold text-slate-800 truncate">{result.filename}</p>
-                                        <p className={`text-sm ${result.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
-                                            {result.message}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                </button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Upload Results */}
+            <AnimatePresence>
+                {uploadResults.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-2"
+                    >
+                        {uploadResults.map((result, index) => (
+                            <motion.div
+                                key={result.filename}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`
+                                        p-4 rounded-xl border flex items-center gap-3 backdrop-blur-sm
+                                        ${result.status === 'success'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20'
+                                        : 'bg-red-500/10 border-red-500/20'
+                                    }
+                                    `}
+                            >
+                                {result.status === 'success' ? (
+                                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                ) : (
+                                    <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-slate-800 truncate">{result.filename}</p>
+                                    <p className={`text-sm ${result.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                                        {result.message}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
+
     );
 };
 
@@ -633,16 +761,26 @@ const ConnectionPointTab = () => {
     const { user } = useAuth();
     const [uploading, setUploading] = useState(false);
     const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]);
 
-    const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleDeploy = async () => {
+        if (selectedFiles.length === 0) return;
 
         setUploading(true);
         setUploadResults([]);
 
         try {
             const results = await Promise.all(
-                acceptedFiles.map(async (file) => {
+                selectedFiles.map(async (file) => {
                     try {
                         const formData = new FormData();
                         formData.append('file', file);
@@ -677,12 +815,13 @@ const ConnectionPointTab = () => {
             );
 
             setUploadResults(results);
+            setSelectedFiles([]);
         } catch (error) {
             console.error('Connection points upload error:', error);
         } finally {
             setUploading(false);
         }
-    }, [user]);
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -740,6 +879,63 @@ const ConnectionPointTab = () => {
                     )}
                 </motion.div>
             </div>
+
+            {/* Selected Files Preview */}
+            <AnimatePresence>
+                {selectedFiles.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-3"
+                    >
+                        <h4 className="font-bold text-slate-300">Ready to Deploy</h4>
+                        <div className="grid gap-2">
+                            {selectedFiles.map((file, idx) => (
+                                <motion.div
+                                    key={`${file.name}-${idx}`}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 10 }}
+                                    className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <File className="w-4 h-4 text-infor-red" />
+                                        <span className="text-sm text-slate-200">{file.name}</span>
+                                        <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                    </div>
+                                    <button
+                                        onClick={() => removeFile(file)}
+                                        className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                    </button>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={handleDeploy}
+                                disabled={uploading}
+                                className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Deploying...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-4 h-4" />
+                                        Deploy {selectedFiles.length} item(s)
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Results */}
             <AnimatePresence>
