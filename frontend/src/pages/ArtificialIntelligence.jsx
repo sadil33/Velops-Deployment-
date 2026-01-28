@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import JSZip from 'jszip';
 import { useAuth } from '../context/AuthContext';
+import FileDropInput from '../components/FileDropInput';
 
 const AITab = ({ active, onClick, icon: Icon, label }) => (
     <button
@@ -52,6 +53,7 @@ const DatasetsTab = () => {
         setUploading(true);
         setUploadResults([]);
         const results = [];
+        const successfulNames = [];
 
         try {
             await Promise.all(selectedFiles.map(async (file) => {
@@ -77,6 +79,10 @@ const DatasetsTab = () => {
                         success: true,
                         message: "Uploaded successfully"
                     });
+
+                    // Capture name without extension
+                    successfulNames.push(file.name.replace(/\.[^/.]+$/, ""));
+
                 } catch (error) {
                     console.error(`Upload Failed for ${file.name}:`, error);
                     results.push({
@@ -89,6 +95,17 @@ const DatasetsTab = () => {
 
             setUploadResults(results);
             setSelectedFiles([]);
+
+            // Auto-populate input field
+            if (successfulNames.length > 0) {
+                setDatasetNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    // Add only unique names
+                    const newNames = successfulNames.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
+
         } catch (error) {
             console.error("General Upload Error:", error);
         } finally {
@@ -123,23 +140,7 @@ const DatasetsTab = () => {
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {['Training Data', 'Validation Sets', 'Test Data'].map((item, i) => (
-                    <motion.div
-                        key={item}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-infor-red/50 transition-colors group cursor-pointer"
-                    >
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Database className="w-6 h-6 text-indigo-400" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-white mb-2">{item}</h3>
-                        <p className="text-slate-400 text-sm">Manage your {item.toLowerCase()} repositories.</p>
-                    </motion.div>
-                ))}
-            </div>
+
 
             <div
                 {...getRootProps()}
@@ -252,11 +253,10 @@ const DatasetsTab = () => {
                 <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-2">Dataset Names (comma separated)</label>
-                        <textarea
+                        <FileDropInput
                             value={datasetNames}
-                            onChange={(e) => setDatasetNames(e.target.value)}
-                            placeholder="e.g., SalesData, InventoryLog, UserMetrics"
-                            className="w-full h-24 bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-infor-red/50 resize-none font-mono text-sm"
+                            onChange={setDatasetNames}
+                            placeholder="e.g., SalesData, InventoryLog..."
                         />
                     </div>
                     <div className="flex justify-end">
@@ -369,8 +369,20 @@ const QuestsTab = () => {
                 });
             }
         }
+
         setUploadResults(results);
         setSelectedFiles([]);
+
+        // Auto-populate input field
+        const successfulNames = results.filter(r => r.status === 'success').map(r => r.name.replace(/\.[^/.]+$/, ""));
+        if (successfulNames.length > 0) {
+            setTrainNames(prev => {
+                const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                const newNames = successfulNames.filter(n => !existing.includes(n));
+                return [...existing, ...newNames].join(', ');
+            });
+        }
+
         setUploading(false);
     };
 
@@ -405,6 +417,7 @@ const QuestsTab = () => {
             setTraining(false);
         }
     };
+
 
     return (
         <div className="space-y-8">
@@ -501,12 +514,10 @@ const QuestsTab = () => {
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-2">Quest Names (comma separated)</label>
-                        <input
-                            type="text"
+                        <FileDropInput
                             value={trainNames}
-                            onChange={(e) => setTrainNames(e.target.value)}
-                            placeholder="e.g. MyQuest1, MyQuest2"
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-infor-red/50"
+                            onChange={setTrainNames}
+                            placeholder="e.g. MyQuest1, MyQuest2..."
                         />
                     </div>
                     <div className="flex justify-end">
@@ -860,6 +871,16 @@ const CustomAlgorithmTab = () => {
                 setCreationResults([...results]);
             }
 
+            // Auto-populate deploy input with successfully created algorithms
+            const successfulAlgos = results.filter(r => r.success).map(r => r.name);
+            if (successfulAlgos.length > 0) {
+                setDeployNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const newNames = successfulAlgos.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
+
         } catch (error) {
             console.error("General Creation Error:", error);
         } finally {
@@ -981,12 +1002,10 @@ const CustomAlgorithmTab = () => {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Algorithm Names (comma separated)</label>
-                            <input
-                                type="text"
+                            <FileDropInput
                                 value={deployNames}
-                                onChange={(e) => setDeployNames(e.target.value)}
-                                placeholder="e.g. Algo1, Algo2"
-                                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-infor-red/50"
+                                onChange={setDeployNames}
+                                placeholder="e.g. Algo1, Algo2..."
                             />
                         </div>
                         <div className="flex justify-end">

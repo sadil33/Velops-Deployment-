@@ -68,7 +68,8 @@ app.post('/api/proxy', async (req, res) => {
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const { extractText } = require('./services/fileParser');
-const { extractRolesFromText } = require('./services/roleExtractor');
+const { extractRolesFromText } = require('./services/roleExtractor'); // Legacy regex extractor
+const { extractDataWithGemini } = require('./services/geminiService'); // New AI extractor
 
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   if (!req.file) {
@@ -79,13 +80,20 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     console.log(`[Parse] Processing file: ${req.file.originalname}`);
     console.log(`[Parse] MimeType: ${req.file.mimetype}`);
 
+    // Extract text from the file (OCR or Text)
+    const text = await extractText(req.file);
+    console.log(`[Parse] Extracted text length: ${text.length} chars.`);
+
     let roles = [];
 
-    // Extract text from the file (works for TXT, PDF, DOCX)
-    const text = await extractText(req.file);
-
-    // Use simple text parsing to extract roles (no AI)
-    roles = extractRolesFromText(text);
+    // Conditional Logic: TXT vs Others
+    if (req.file.mimetype === 'text/plain') {
+      console.log('[Parse] Method: Legacy Regex (TXT file)');
+      roles = extractRolesFromText(text);
+    } else {
+      console.log('[Parse] Method: Gemini AI (Document/Image)');
+      roles = await extractDataWithGemini(text);
+    }
 
     console.log(`[Parse] Extracted ${roles.length} roles.`);
     res.json({ roles });

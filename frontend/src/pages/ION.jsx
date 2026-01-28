@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import FileDropInput from '../components/FileDropInput';
 
 const ION = () => {
     const [activeTab, setActiveTab] = useState('workflows');
@@ -179,6 +180,16 @@ const WorkflowsTab = () => {
 
             setUploadResults(results);
             setSelectedFiles([]); // Clear queue
+
+            // Auto-populate input field
+            const successfulNames = results.filter(r => r.status === 'success').map(r => r.filename.replace(/\.[^/.]+$/, ""));
+            if (successfulNames.length > 0) {
+                setWorkflowNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const newNames = successfulNames.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
         } catch (error) {
             console.error('Upload error:', error);
         } finally {
@@ -200,14 +211,14 @@ const WorkflowsTab = () => {
                     Activate Workflows
                 </h3>
                 <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={workflowNames}
-                        onChange={(e) => setWorkflowNames(e.target.value)}
-                        placeholder="Enter workflow names (comma-separated, e.g., Workflow1,Workflow2)"
-                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
-                        disabled={activating}
-                    />
+                    <div className="flex-1">
+                        <FileDropInput
+                            value={workflowNames}
+                            onChange={setWorkflowNames}
+                            placeholder="Enter or Drop Workflow Names..."
+                            disabled={activating}
+                        />
+                    </div>
                     <button
                         onClick={handleActivate}
                         disabled={activating || !workflowNames.trim()}
@@ -520,6 +531,16 @@ const DataflowsTab = () => {
 
             setUploadResults(results);
             setSelectedFiles([]); // Clear
+
+            // Auto-populate input field
+            const successfulNames = results.filter(r => r.status === 'success').map(r => r.filename.replace(/\.[^/.]+$/, ""));
+            if (successfulNames.length > 0) {
+                setDataflowNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const newNames = successfulNames.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
         } catch (error) {
             console.error('Dataflows upload error:', error);
         } finally {
@@ -541,14 +562,14 @@ const DataflowsTab = () => {
                     Activate Dataflows
                 </h3>
                 <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={dataflowNames}
-                        onChange={(e) => setDataflowNames(e.target.value)}
-                        placeholder="Enter dataflow names (comma-separated, e.g., CSWMS_IMS,dataflow2)"
-                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
-                        disabled={activating}
-                    />
+                    <div className="flex-1">
+                        <FileDropInput
+                            value={dataflowNames}
+                            onChange={setDataflowNames}
+                            placeholder="Enter or Drop Dataflow Names..."
+                            disabled={activating}
+                        />
+                    </div>
                     <button
                         onClick={handleActivate}
                         disabled={activating || !dataflowNames.trim()}
@@ -1080,6 +1101,16 @@ const BusinessRulesTab = () => {
             );
 
             setUploadResults(results);
+
+            // Auto-populate input field
+            const successfulNames = results.filter(r => r.status === 'success').map(r => r.filename.replace(/\.[^/.]+$/, ""));
+            if (successfulNames.length > 0) {
+                setRuleNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    const newNames = successfulNames.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
         } catch (error) {
             console.error('Business rules upload error:', error);
         } finally {
@@ -1101,14 +1132,14 @@ const BusinessRulesTab = () => {
                     Approve Business Rules
                 </h3>
                 <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={ruleNames}
-                        onChange={(e) => setRuleNames(e.target.value)}
-                        placeholder="Enter business rule names (comma-separated, e.g., rule1,rule2)"
-                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
-                        disabled={approving}
-                    />
+                    <div className="flex-1">
+                        <FileDropInput
+                            value={ruleNames}
+                            onChange={setRuleNames}
+                            placeholder="Enter or Drop Business Rule Names..."
+                            disabled={approving}
+                        />
+                    </div>
                     <button
                         onClick={handleApprove}
                         disabled={approving || !ruleNames.trim()}
@@ -1424,6 +1455,17 @@ const ScriptingTab = () => {
             );
 
             setScriptResults(results);
+
+            // Auto-populate input field
+            const successfulNames = results.filter(r => r.status === 'success').map(r => r.filename.replace(/\.[^/.]+$/, ""));
+            if (successfulNames.length > 0) {
+                setScriptNames(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    // Scripts often need exact casing, but standardizing on replacing extension logic
+                    const newNames = successfulNames.filter(n => !existing.includes(n));
+                    return [...existing, ...newNames].join(', ');
+                });
+            }
         } catch (error) {
             console.error('Scripts upload error:', error);
         } finally {
@@ -1450,14 +1492,14 @@ const ScriptingTab = () => {
                     Approve Scripts
                 </h3>
                 <div className="flex gap-3">
-                    <input
-                        type="text"
-                        value={scriptNames}
-                        onChange={(e) => setScriptNames(e.target.value)}
-                        placeholder="Enter script names (comma-separated, e.g., statuscheck,statuscheck1)"
-                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
-                        disabled={approving}
-                    />
+                    <div className="flex-1">
+                        <FileDropInput
+                            value={scriptNames}
+                            onChange={setScriptNames}
+                            placeholder="Enter or Drop Script Names..."
+                            disabled={approving}
+                        />
+                    </div>
                     <button
                         onClick={handleApprove}
                         disabled={approving || !scriptNames.trim()}

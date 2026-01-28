@@ -118,18 +118,18 @@ const SecurityRoles = () => {
                                     key={idx}
                                     whileHover={{ scale: 1.02 }}
                                     className={`flex items-center justify-between p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 ${isPresent
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 hover:bg-emerald-500/20' // Present
-                                        : 'bg-rose-500/10 border-rose-500/20 text-rose-800 hover:bg-rose-500/20'     // Missing
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20' // Present: Light Green Text
+                                        : 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20'     // Missing: Light Red Text
                                         }`}
                                 >
                                     <span className="font-bold text-sm truncate pr-2" title={reqRole}>{reqRole}</span>
                                     {isPresent ? (
-                                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-white/50 px-2 py-1 rounded-lg">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/20 px-3 py-1 rounded-lg border border-emerald-500/20">
                                             <span>Match</span>
                                             <CheckCircle2 className="w-4 h-4" />
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-white/50 px-2 py-1 rounded-lg">
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-rose-300 bg-rose-500/20 px-3 py-1 rounded-lg border border-rose-500/20">
                                             <span>Missing</span>
                                             <XCircle className="w-4 h-4" />
                                         </div>

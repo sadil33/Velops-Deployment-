@@ -13,18 +13,21 @@ const Prerequisites = () => {
     const { setRequirements } = useAuth();
     const navigate = useNavigate();
 
+    const [extractedRoles, setExtractedRoles] = useState([]);
+
     const onDrop = useCallback(async (acceptedFiles) => {
         const file = acceptedFiles[0];
         if (!file) return;
 
         setUploading(true);
         setError(null);
+        setExtractedRoles([]);
 
         const formData = new FormData();
         formData.append('file', file);
 
         try {
-            // Call our Backend AI Parsing Endpoint
+            // Call our Backend Parsing Endpoint
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/parse`, formData, {
                 headers: {
@@ -38,9 +41,8 @@ const Prerequisites = () => {
             if (roles.length === 0) {
                 setError("No security roles were found in this document. Please check the file content.");
             } else {
-                setRequirements(roles);
-                // Navigate to Dashboard on success
-                navigate('/dashboard');
+                setExtractedRoles(roles);
+                // Don't auto-navigate, let user review
             }
 
         } catch (err) {
@@ -50,7 +52,12 @@ const Prerequisites = () => {
         } finally {
             setUploading(false);
         }
-    }, [navigate, setRequirements]);
+    }, []);
+
+    const handleProceed = () => {
+        setRequirements(extractedRoles);
+        navigate('/dashboard');
+    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -58,7 +65,7 @@ const Prerequisites = () => {
             'application/pdf': ['.pdf'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
             'text/plain': ['.txt'],
-            'image/png': ['.png'], // Also accepting images since user shared one
+            'image/png': ['.png'],
             'image/jpeg': ['.jpg', '.jpeg']
         },
         maxFiles: 1
@@ -94,7 +101,7 @@ const Prerequisites = () => {
                         {uploading ? (
                             <>
                                 <Loader2 className="w-12 h-12 text-infor-red animate-spin" />
-                                <p className="font-bold text-infor-red text-lg">Analyzing Document via Gemini AI...</p>
+                                <p className="font-bold text-infor-red text-lg">Analyzing Document...</p>
                             </>
                         ) : (
                             <>
@@ -111,6 +118,30 @@ const Prerequisites = () => {
                         )}
                     </div>
 
+                    {/* Results Display */}
+                    {extractedRoles.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            className="mt-6 space-y-4"
+                        >
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-500" />
+                                Extracted {extractedRoles.length} Roles
+                            </h3>
+                            <div className="bg-black/30 rounded-xl p-4 max-h-64 overflow-y-auto custom-scrollbar border border-white/10">
+                                <ul className="space-y-2">
+                                    {extractedRoles.map((role, i) => (
+                                        <li key={i} className="flex items-center gap-3 text-slate-300 p-2 rounded hover:bg-white/5 transition-colors">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-infor-red"></div>
+                                            <span className="font-mono text-sm">{role}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </motion.div>
+                    )}
+
                     {error && (
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -122,14 +153,31 @@ const Prerequisites = () => {
                         </motion.div>
                     )}
 
-                    <div className="mt-8 flex justify-end">
-                        <Button
-                            onClick={() => navigate('/dashboard')}
-                            disabled={uploading}
-                            className="bg-white/10 text-white hover:bg-white/20 border border-white/5"
-                        >
-                            Skip Step
-                        </Button>
+                    <div className="mt-8 flex justify-end gap-3">
+                        {extractedRoles.length > 0 ? (
+                            <>
+                                <Button
+                                    onClick={() => setExtractedRoles([])} // Reset
+                                    className="bg-white/10 text-white hover:bg-white/20 border border-white/5"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleProceed}
+                                    className="bg-infor-red text-white hover:bg-[#b00029] shadow-lg shadow-red-900/40"
+                                >
+                                    Proceed to Dashboard
+                                </Button>
+                            </>
+                        ) : (
+                            <Button
+                                onClick={() => navigate('/dashboard')}
+                                disabled={uploading}
+                                className="bg-white/10 text-white hover:bg-white/20 border border-white/5"
+                            >
+                                Skip Step
+                            </Button>
+                        )}
                     </div>
                 </div>
             </motion.div>

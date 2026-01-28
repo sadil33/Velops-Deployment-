@@ -13,6 +13,7 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [showLogin, setShowLogin] = useState(false);
+    const [connectionError, setConnectionError] = useState(false); // New state for full page error
 
     const { login } = useAuth();
     const navigate = useNavigate();
@@ -60,9 +61,8 @@ const Login = () => {
         setError(null);
 
         try {
-            // Validate connection by fetching "me" endpoint
-            // We always default to the 'me' endpoint for validation login
-            const endpoint = 'ifsservice/usermgt/v2/users/me';
+            // Validate connection (Changed to ifsservice/info as requested)
+            const endpoint = 'ifsservice/info';
 
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
@@ -72,17 +72,96 @@ const Login = () => {
                 method: 'GET'
             });
 
-            // If successful, store in context and redirect
-            login(tenantUrl, token, res.data);
-            navigate('/prerequisites');
+            if (res.status === 200) {
+                // Check if response is HTML (Unexpected for API)
+                const isHtml = typeof res.data === 'string' && res.data.trim().startsWith('<');
+
+                if (isHtml) {
+                    console.error("Received HTML response instead of JSON");
+                    setConnectionError(true);
+                    return;
+                }
+
+                // If successful (200 OK), try to fetch detailed user info
+                let userData = res.data;
+
+                try {
+                    // Fetch accurate user details
+                    const userRes = await axios.post(`${apiUrl}/api/proxy`, {
+                        tenantUrl,
+                        endpoint: 'ifsservice/usermgt/v2/users/me',
+                        token,
+                        method: 'GET'
+                    });
+
+                    if (userRes.status === 200 && userRes.data) {
+                        // Reshape data if needed to match AuthContext expectation
+                        if (userRes.data.response && userRes.data.response.userlist) {
+                            userData = userRes.data;
+                        } else {
+                            userData = {
+                                response: {
+                                    userlist: [userRes.data]
+                                }
+                            };
+                        }
+                    }
+                } catch (userErr) {
+                    console.warn("Could not fetch user details, using generic info", userErr);
+                    // Fallback to existing data if this fails, though likely generic
+                }
+
+                login(tenantUrl, token, userData);
+                navigate('/prerequisites');
+            } else {
+                // If not 200 (unexpected), show error page
+                setConnectionError(true);
+            }
 
         } catch (err) {
-            console.error(err);
-            setError(err.response?.data?.error || err.message || 'Connection failed');
+            console.error("Connection Error:", err);
+            // On any error (404, 500, Network), show the Error Page
+            setConnectionError(true);
         } finally {
             setLoading(false);
         }
     };
+
+    // Full Page Error View
+    if (connectionError) {
+        return (
+            <div className="min-h-screen animated-bg flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md w-full text-center"
+                >
+                    <div className="inline-flex items-center justify-center p-6 bg-red-500/20 rounded-full mb-6 relative">
+                        {/* Alert Icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" /></svg>
+                        <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full -z-10 animate-pulse"></div>
+                    </div>
+
+                    <h1 className="text-6xl font-black text-white mb-2">404</h1>
+                    <h2 className="text-2xl font-bold text-slate-300 mb-6">Connection Failed</h2>
+
+                    <p className="text-slate-400 mb-8 font-medium">
+                        Please check the url and access token.
+                    </p>
+
+                    <Button
+                        onClick={() => {
+                            setConnectionError(false);
+                            setError(null); // Reset inline error
+                        }}
+                        className="mx-auto w-auto px-8"
+                    >
+                        Retry Login
+                    </Button>
+                </motion.div>
+            </div>
+        );
+    }
 
     if (!showLogin) {
         return (
