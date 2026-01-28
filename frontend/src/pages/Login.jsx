@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck } from 'lucide-react';
 import axios from 'axios';
@@ -12,9 +12,43 @@ const Login = () => {
     const [token, setToken] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showLogin, setShowLogin] = useState(false);
 
     const { login } = useAuth();
     const navigate = useNavigate();
+    const ssoChecked = useRef(false);
+
+    useEffect(() => {
+        if (ssoChecked.current) return;
+        ssoChecked.current = true;
+
+        const checkSSO = () => {
+            const params = new URLSearchParams(window.location.search);
+            const hasCode = params.get('code');
+            const hasError = params.get('error') || params.get('access_denied');
+
+            if (hasError) {
+                navigate('/404');
+                return;
+            }
+
+            if (hasCode) {
+                // User authorized, show login form
+                setShowLogin(true);
+                // Clean URL carefully
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                // Not authorized yet, redirect to SSO
+                // We use window.location.origin to support both localhost and render
+                const redirectUri = window.location.origin;
+                const ssoUrl = `https://mingle-sso.inforcloudsuite.com:443/DEVMRKT_DEV/as/authorization.oauth2?client_id=DEVMRKT_DEV~cAu5RJz0BJjZHMDoU88y7phk09tDzFDHMlMLZNeSfYw&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}/`;
+
+                window.location.href = ssoUrl;
+            }
+        };
+
+        checkSSO();
+    }, [navigate]);
 
     const handleConnect = async () => {
         if (!tenantUrl || !token) {
@@ -49,6 +83,17 @@ const Login = () => {
             setLoading(false);
         }
     };
+
+    if (!showLogin) {
+        return (
+            <div className="min-h-screen animated-bg flex items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-infor-red border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-white font-bold animate-pulse">Redirecting to Secure Sign On...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen animated-bg flex items-center justify-center p-4 selection:bg-infor-red selection:text-white">

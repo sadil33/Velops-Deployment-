@@ -7,6 +7,7 @@ import IDMDeployment from './pages/IDMDeployment';
 import ION from './pages/ION';
 import SecurityRoles from './components/SecurityRoles';
 import SidebarLayout from './components/SidebarLayout';
+import NotFound from './pages/NotFound';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
@@ -23,6 +24,8 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<Login />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
 
           <Route path="/prerequisites" element={
             <ProtectedRoute>
