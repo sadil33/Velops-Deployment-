@@ -12,6 +12,47 @@ app.use(cors());
 app.use(express.json());
 
 // Proxy Endpoint
+app.post('/api/auth/token', async (req, res) => {
+  const { clientId, clientSecret, code, redirectUri, tokenUrl } = req.body;
+
+  if (!clientId || !clientSecret || !code || !redirectUri || !tokenUrl) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  try {
+    console.log(`[Auth] Exchanging code for token at: ${tokenUrl}`);
+
+    // Basic Auth Header
+    const authHeader = 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    // Form Data Body
+    const params = new URLSearchParams();
+    params.append('grant_type', 'authorization_code');
+    params.append('code', code);
+    params.append('redirect_uri', redirectUri);
+
+    const response = await axios.post(tokenUrl, params, {
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    console.log('[Auth] Token exchange successful');
+    res.json(response.data);
+
+  } catch (error) {
+    console.error('[Auth Error]', error.message);
+    if (error.response) {
+      console.error('[Auth Error Data]', error.response.data);
+      res.status(error.response.status).json(error.response.data);
+    } else {
+      res.status(500).json({ error: 'Token exchange failed: ' + error.message });
+    }
+  }
+});
+
+// Proxy Endpoint
 app.post('/api/proxy', async (req, res) => {
   const { tenantUrl, endpoint, token, method = 'GET', data = {} } = req.body;
 

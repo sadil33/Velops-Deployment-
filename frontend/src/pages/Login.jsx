@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, FileUp, AlertTriangle } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +16,11 @@ const Login = () => {
     const [showLogin, setShowLogin] = useState(false);
     const [connectionError, setConnectionError] = useState(false); // New state for full page error
 
+    // File Drop State
+    const [droppedFile, setDroppedFile] = useState(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [parsedConfig, setParsedConfig] = useState(null);
+
     const { login } = useAuth();
     const navigate = useNavigate();
     const ssoChecked = useRef(false);
@@ -23,33 +29,159 @@ const Login = () => {
         if (ssoChecked.current) return;
         ssoChecked.current = true;
 
-        const checkSSO = () => {
+        const checkSSO = async () => {
             const params = new URLSearchParams(window.location.search);
             const hasCode = params.get('code');
             const hasError = params.get('error') || params.get('access_denied');
 
             if (hasError) {
-                navigate('/404');
+                navigate('/404', { state: { message: "Please check the login once" } });
                 return;
             }
 
             if (hasCode) {
-                // User authorized, show login form
-                setShowLogin(true);
-                // Clean URL carefully
+                // User authorized
+                try {
+                    // Restore config from session storage
+                    const storedConfig = sessionStorage.getItem('ion_config');
+                    if (storedConfig) {
+                        const config = JSON.parse(storedConfig);
+                        // Construct Token Endpoint: pu + ot
+                        // Ensure pu ends with slash or ot starts with one if needed, but usually pu has trailing slash
+                        const tokenEndpoint = config.pu + config.ot;
+
+                        // Exchange Code for Token via Backend
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                        console.log("Exchanging code for token...");
+
+                        const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
+                            clientId: config.ci,
+                            clientSecret: config.cs,
+                            code: hasCode,
+                            redirectUri: config.ru,
+                            tokenUrl: tokenEndpoint
+                        });
+
+                        const { access_token } = tokenRes.data;
+
+                        if (!access_token) {
+                            throw new Error("No access token returned");
+                        }
+
+                        // Construct proper Tenant URL: https://mingle-ionapi.inforcloudsuite.com/{TenantName}/
+                        // "iu" is the base ionapi url, "ti" is the tenant id
+                        const tenantUrl = `${config.iu}/${config.ti}/`;
+
+                        // Fetch Real User Details
+                        let userData = {
+                            response: {
+                                userlist: [{ DisplayName: 'Infor User', Email: 'user@example.com' }]
+                            }
+                        };
+
+                        try {
+                            const userRes = await axios.post(`${apiUrl}/api/proxy`, {
+                                tenantUrl: tenantUrl,
+                                endpoint: 'ifsservice/usermgt/v2/users/me',
+                                token: access_token,
+                                method: 'GET'
+                            });
+
+                            if (userRes.status === 200 && userRes.data) {
+                                if (userRes.data.response && userRes.data.response.userlist) {
+                                    userData = userRes.data;
+                                } else {
+                                    userData = {
+                                        response: {
+                                            userlist: [userRes.data]
+                                        }
+                                    };
+                                }
+                            }
+                        } catch (err) {
+                            console.warn("Failed to fetch user details, using fallback", err);
+                        }
+
+                        login(tenantUrl, access_token, userData);
+                        navigate('/prerequisites');
+                    } else {
+                        // If no config found (unexpected), show login
+                        setShowLogin(true);
+                    }
+                } catch (e) {
+                    console.error("SSO Handle Error", e);
+                    setShowLogin(true);
+                }
+
+                // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
-                // Not authorized yet, redirect to SSO
-                // We use window.location.origin to support both localhost and render
-                const redirectUri = window.location.origin;
-                const ssoUrl = `https://mingle-sso.inforcloudsuite.com:443/DEVMRKT_DEV/as/authorization.oauth2?client_id=DEVMRKT_DEV~cAu5RJz0BJjZHMDoU88y7phk09tDzFDHMlMLZNeSfYw&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}/`;
-
-                window.location.href = ssoUrl;
+                // Not authorized yet
+                setShowLogin(true);
             }
         };
 
         checkSSO();
-    }, [navigate]);
+    }, [navigate, login]);
+
+    const onDrop = (acceptedFiles) => {
+        const file = acceptedFiles[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const json = JSON.parse(event.target.result);
+                // Basic validation
+                if (json.ti && json.ci && json.pu && json.oa) {
+                    setParsedConfig(json);
+                    setDroppedFile(file);
+                    setShowConfirmModal(true);
+                    setError(null);
+                } else {
+                    setError("Invalid .ionapi file format. Missing required fields.");
+                }
+            } catch (err) {
+                setError("Failed to parse the file. Please ensure it's a valid JSON.");
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: {
+            'application/json': ['.json', '.ionapi'],
+            'text/plain': ['.txt']
+        },
+        maxFiles: 1
+    });
+
+    const handleConfirmConnect = () => {
+        if (!parsedConfig) return;
+
+        const { pu, oa, ci, ru } = parsedConfig;
+
+        // Save config for the return trip
+        sessionStorage.setItem('ion_config', JSON.stringify(parsedConfig));
+
+        // Strict construction as per user algorithm
+        const ssoBaseUrl = pu;
+        const authEndpoint = oa;
+        const clientId = ci;
+        const responseType = "code";
+        const redirectUri = ru; // Explicitly use 'ru' from file
+
+        const authUrl = `${ssoBaseUrl}${authEndpoint}?client_id=${clientId}&response_type=${responseType}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+
+        // Redirect
+        window.location.href = authUrl;
+    };
+
+    const handleDenyConnect = () => {
+        // "if don't allow then it should show the 404 not found with a message please check the login once"
+        navigate('/404', { state: { message: "Please check the login once" } });
+    };
 
     const handleConnect = async () => {
         if (!tenantUrl || !token) {
@@ -63,7 +195,6 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
@@ -168,8 +299,49 @@ const Login = () => {
             <div className="min-h-screen animated-bg flex items-center justify-center p-4">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-infor-red border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-white font-bold animate-pulse">Redirecting to Secure Sign On...</p>
+                    <p className="text-white font-bold animate-pulse">Loading Secure Sign On...</p>
                 </div>
+            </div>
+        );
+    }
+
+    // Confirmation Modal
+    if (showConfirmModal && parsedConfig) {
+        return (
+            <div className="min-h-screen animated-bg flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md w-full relative"
+                >
+                    <div className="glass-panel rounded-3xl shadow-2xl p-8 flex flex-col gap-6 backdrop-blur-3xl border border-white/10 bg-slate-900/60 relative z-10 text-center">
+                        <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
+                            <ShieldCheck className="w-10 h-10 text-blue-400" />
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-white">Allow Connection?</h2>
+                        <p className="text-slate-400">
+                            Do you want to authenticate with <strong>{parsedConfig.ti}</strong>?
+                            <br />
+                            <span className="text-xs text-slate-500 mt-2 block break-all">{parsedConfig.iu}</span>
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                            <button
+                                onClick={handleDenyConnect}
+                                className="px-6 py-3 rounded-xl font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+                            >
+                                Don't Allow
+                            </button>
+                            <button
+                                onClick={handleConfirmConnect}
+                                className="px-6 py-3 rounded-xl font-bold text-white bg-infor-red hover:bg-red-600 shadow-lg shadow-red-900/20 transition-all"
+                            >
+                                Allow
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         );
     }
@@ -204,6 +376,33 @@ const Login = () => {
                 </div>
 
                 <div className="glass-panel rounded-3xl shadow-2xl shadow-black/50 p-8 flex flex-col gap-6 backdrop-blur-3xl border border-white/10 relative z-10 bg-slate-900/60">
+
+                    {/* Dropzone Area */}
+                    <div
+                        {...getRootProps()}
+                        className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer group ${isDragActive
+                            ? 'border-infor-red bg-infor-red/10'
+                            : 'border-slate-700 hover:border-slate-500 hover:bg-white/5'
+                            }`}
+                    >
+                        <input {...getInputProps()} />
+                        <div className="flex flex-col items-center gap-3 text-slate-400 group-hover:text-slate-200">
+                            <FileUp className={`w-8 h-8 ${isDragActive ? 'text-infor-red animate-bounce' : ''}`} />
+                            <p className="text-sm font-medium">
+                                {isDragActive
+                                    ? "Drop the .ionapi file here..."
+                                    : "Drop your .ionapi file here to auto-connect"
+                                }
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="relative flex items-center py-2">
+                        <div className="flex-grow border-t border-slate-700"></div>
+                        <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase">Or Manual Login</span>
+                        <div className="flex-grow border-t border-slate-700"></div>
+                    </div>
+
                     <div className="space-y-4">
                         <Input
                             label="Tenant URL"
@@ -225,8 +424,9 @@ const Login = () => {
                         <motion.div
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
-                            className="text-white text-sm bg-infor-red/80 p-4 rounded-xl border border-red-500/50 backdrop-blur-sm shadow-lg font-medium"
+                            className="text-white text-sm bg-infor-red/80 p-4 rounded-xl border border-red-500/50 backdrop-blur-sm shadow-lg font-medium flex items-center gap-2"
                         >
+                            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                             {error}
                         </motion.div>
                     )}

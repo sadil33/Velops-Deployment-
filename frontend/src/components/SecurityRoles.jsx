@@ -101,8 +101,8 @@ const SecurityRoles = () => {
                                 <FileText className="w-8 h-8" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-800">Requirements Analysis</h2>
-                                <p className="text-slate-500 font-medium">Comparison against uploaded requirements</p>
+                                <h2 className="text-2xl font-bold text-white">Requirements Analysis</h2>
+                                <p className="text-slate-300 font-medium">Comparison against uploaded requirements</p>
                             </div>
                         </div>
                         <div className="text-sm font-bold px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg">
