@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, FileUp, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, FileUp, AlertTriangle, X, CheckCircle2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +18,6 @@ const Login = () => {
 
     // File Drop State
     const [droppedFile, setDroppedFile] = useState(null);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [parsedConfig, setParsedConfig] = useState(null);
 
     const { login } = useAuth();
@@ -136,7 +135,6 @@ const Login = () => {
                 if (json.ti && json.ci && json.pu && json.oa) {
                     setParsedConfig(json);
                     setDroppedFile(file);
-                    setShowConfirmModal(true);
                     setError(null);
                 } else {
                     setError("Invalid .ionapi file format. Missing required fields.");
@@ -148,6 +146,12 @@ const Login = () => {
         reader.readAsText(file);
     };
 
+    const handleRemoveFile = () => {
+        setDroppedFile(null);
+        setParsedConfig(null);
+        setError(null);
+    };
+
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: {
@@ -157,7 +161,7 @@ const Login = () => {
         maxFiles: 1
     });
 
-    const handleConfirmConnect = () => {
+    const handleSSORedirect = () => {
         if (!parsedConfig) return;
 
         const { pu, oa, ci, ru } = parsedConfig;
@@ -183,7 +187,7 @@ const Login = () => {
         navigate('/404', { state: { message: "Please check the login once" } });
     };
 
-    const handleConnect = async () => {
+    const handleManualConnect = async () => {
         if (!tenantUrl || !token) {
             setError('Please provide both Tenant URL and Access Token');
             return;
@@ -305,47 +309,6 @@ const Login = () => {
         );
     }
 
-    // Confirmation Modal
-    if (showConfirmModal && parsedConfig) {
-        return (
-            <div className="min-h-screen animated-bg flex items-center justify-center p-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md w-full relative"
-                >
-                    <div className="glass-panel rounded-3xl shadow-2xl p-8 flex flex-col gap-6 backdrop-blur-3xl border border-white/10 bg-slate-900/60 relative z-10 text-center">
-                        <div className="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-2 animate-pulse">
-                            <ShieldCheck className="w-10 h-10 text-blue-400" />
-                        </div>
-
-                        <h2 className="text-2xl font-bold text-white">Allow Connection?</h2>
-                        <p className="text-slate-400">
-                            Do you want to authenticate with <strong>{parsedConfig.ti}</strong>?
-                            <br />
-                            <span className="text-xs text-slate-500 mt-2 block break-all">{parsedConfig.iu}</span>
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                            <button
-                                onClick={handleDenyConnect}
-                                className="px-6 py-3 rounded-xl font-bold text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
-                            >
-                                Don't Allow
-                            </button>
-                            <button
-                                onClick={handleConfirmConnect}
-                                className="px-6 py-3 rounded-xl font-bold text-white bg-infor-red hover:bg-red-600 shadow-lg shadow-red-900/20 transition-all"
-                            >
-                                Allow
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen animated-bg flex items-center justify-center p-4 selection:bg-infor-red selection:text-white">
             <motion.div
@@ -387,38 +350,73 @@ const Login = () => {
                     >
                         <input {...getInputProps()} />
                         <div className="flex flex-col items-center gap-3 text-slate-400 group-hover:text-slate-200">
-                            <FileUp className={`w-8 h-8 ${isDragActive ? 'text-infor-red animate-bounce' : ''}`} />
+                            {/* Change icon if file present */}
+                            {droppedFile ? (
+                                <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-pulse" />
+                            ) : (
+                                <FileUp className={`w-8 h-8 ${isDragActive ? 'text-infor-red animate-bounce' : ''}`} />
+                            )}
+
                             <p className="text-sm font-medium">
-                                {isDragActive
-                                    ? "Drop the .ionapi file here..."
-                                    : "Drop your .ionapi file here to auto-connect"
+                                {droppedFile
+                                    ? "Config Loaded! Drop a different file to replace."
+                                    : isDragActive ? "Drop the .ionapi file here..." : "Drop your .ionapi file here to auto-connect"
                                 }
                             </p>
                         </div>
                     </div>
 
-                    <div className="relative flex items-center py-2">
-                        <div className="flex-grow border-t border-slate-700"></div>
-                        <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase">Or Manual Login</span>
-                        <div className="flex-grow border-t border-slate-700"></div>
-                    </div>
+                    {/* Preview OR Manual Inputs */}
+                    {droppedFile && parsedConfig ? (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-white/5 p-4 rounded-xl border border-white/10 flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-3 overflow-hidden">
+                                <div className="p-2 bg-infor-red/20 rounded-lg text-infor-red flex-shrink-0">
+                                    <FileUp className="w-6 h-6" />
+                                </div>
+                                <div className="text-left min-w-0">
+                                    <p className="text-white font-bold text-sm truncate">{droppedFile.name}</p>
+                                    <p className="text-slate-400 text-xs truncate">Tenant: {parsedConfig.ti}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleRemoveFile(); }}
+                                className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors flex-shrink-0"
+                                title="Remove File"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </motion.div>
+                    ) : (
+                        <>
+                            {/* OR Separator */}
+                            <div className="relative flex items-center py-2">
+                                <div className="flex-grow border-t border-slate-700"></div>
+                                <span className="flex-shrink-0 mx-4 text-slate-500 text-xs font-bold uppercase">Or Manual Login</span>
+                                <div className="flex-grow border-t border-slate-700"></div>
+                            </div>
 
-                    <div className="space-y-4">
-                        <Input
-                            label="Tenant URL"
-                            placeholder="https://mingle-ionapi.inforcloudsuite.com/TENANTID/"
-                            value={tenantUrl}
-                            onChange={(e) => setTenantUrl(e.target.value)}
-                        />
+                            <div className="space-y-4">
+                                <Input
+                                    label="Tenant URL"
+                                    placeholder="https://mingle-ionapi.inforcloudsuite.com/TENANTID/"
+                                    value={tenantUrl}
+                                    onChange={(e) => setTenantUrl(e.target.value)}
+                                />
 
-                        <Input
-                            label="Access Token"
-                            placeholder="Type your secure token..."
-                            value={token}
-                            onChange={(e) => setToken(e.target.value)}
-                            type="password"
-                        />
-                    </div>
+                                <Input
+                                    label="Access Token"
+                                    placeholder="Type your secure token..."
+                                    value={token}
+                                    onChange={(e) => setToken(e.target.value)}
+                                    type="password"
+                                />
+                            </div>
+                        </>
+                    )}
 
                     {error && (
                         <motion.div
@@ -431,8 +429,12 @@ const Login = () => {
                         </motion.div>
                     )}
 
-                    <Button onClick={handleConnect} loading={loading}>
-                        Connect Securely
+                    <Button
+                        onClick={droppedFile ? handleSSORedirect : handleManualConnect}
+                        loading={loading}
+                        className={droppedFile ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20" : ""}
+                    >
+                        {droppedFile ? "Connect Securely (SSO)" : "Connect Securely"}
                     </Button>
 
                     <div className="text-center">
