@@ -19,17 +19,16 @@ const extractDataWithGemini = async (documentText) => {
 
     // Using the user-provided prompt template
     const prompt = `
-    You are a data extraction engine. Your job is to read the provided text and extract a specific list of items.
+    You are a strict data extraction engine. Your SOLE job is to extract Security Roles from the provided text.
 
-    TARGET DATA TO EXTRACT: Security roles
+    TARGET DATA: Security Roles (typically technical identifiers like 'IG_Role_Name', 'RPA_Admin', 'FND_WebUser', etc.)
 
-    RULES:
-    1. Analyze the document text provided below.
-    2. Identify all items that match the "TARGET DATA" description.
-    3. If the data is in a table, extract the relevant column values.
-    4. Clean the data (remove footnote markers, extra whitespace).
-    5. Return the output as a valid JSON object with a single key "extracted_items".
-    6. Do not include Markdown formatting (like \`\`\`json). Just the raw JSON string.
+    STRICT RULES:
+    1. Extract ONLY items that are clearly identified as Security Roles.
+    2. IGNORE all other text, headers, descriptions, page numbers, footnotes, or unrelated data.
+    3. If a value looks like a sentence, a description, or a person's name, DO NOT include it.
+    4. Return the output as a valid JSON object with a single key "extracted_items" which is an array of strings.
+    5. Do not include Markdown formatting (like \`\`\`json). Just the raw JSON string.
 
     DOCUMENT TEXT:
     ${documentText}
