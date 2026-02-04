@@ -16,10 +16,6 @@ const Login = () => {
     const [showLogin, setShowLogin] = useState(false);
     const [connectionError, setConnectionError] = useState(false); // New state for full page error
 
-    // Login Type State
-    const [loginType, setLoginType] = useState('PMO'); // 'PMO' or 'Velops'
-    const [velopsPassword, setVelopsPassword] = useState('');
-
     // File Drop State
     const [droppedFile, setDroppedFile] = useState(null);
     const [parsedConfig, setParsedConfig] = useState(null);
@@ -47,8 +43,6 @@ const Login = () => {
                 try {
                     // Restore config from session storage
                     const storedConfig = sessionStorage.getItem('ion_config');
-                    const storedLoginType = sessionStorage.getItem('login_type') || 'PMO';
-
                     if (storedConfig) {
                         const config = JSON.parse(storedConfig);
                         // Construct Token Endpoint: pu + ot
@@ -63,7 +57,7 @@ const Login = () => {
                             clientId: config.ci,
                             clientSecret: config.cs,
                             code: hasCode,
-                            redirectUri: config.ru || window.location.origin,
+                            redirectUri: window.location.origin,
                             tokenUrl: tokenEndpoint
                         });
 
@@ -107,7 +101,7 @@ const Login = () => {
                             console.warn("Failed to fetch user details, using fallback", err);
                         }
 
-                        login(tenantUrl, access_token, userData, storedLoginType);
+                        login(tenantUrl, access_token, userData);
                         navigate('/prerequisites');
                     } else {
                         // If no config found (unexpected), show login
@@ -174,27 +168,15 @@ const Login = () => {
 
         // Save config for the return trip
         sessionStorage.setItem('ion_config', JSON.stringify(parsedConfig));
-        sessionStorage.setItem('login_type', loginType);
-
-        if (loginType === 'Velops' && velopsPassword !== 'LetmeinVelops') {
-            setError('Invalid Velops Password');
-            return;
-        }
 
         // Strict construction as per user algorithm
         const ssoBaseUrl = pu;
         const authEndpoint = oa;
         const clientId = ci;
         const responseType = "code";
-
-        // Use 'ru' from file if available, otherwise default to current origin
-        const redirectUri = ru || window.location.origin;
+        const redirectUri = window.location.origin; // Dynamically use current origin
 
         const authUrl = `${ssoBaseUrl}${authEndpoint}?client_id=${clientId}&response_type=${responseType}&redirect_uri=${redirectUri}`;
-
-        console.log("---------------------------------------------------------");
-        console.log("FINAL AUTH URL:", authUrl);
-        console.log("---------------------------------------------------------");
 
         // Redirect
         window.location.href = authUrl;
@@ -208,11 +190,6 @@ const Login = () => {
     const handleManualConnect = async () => {
         if (!tenantUrl || !token) {
             setError('Please provide both Tenant URL and Access Token');
-            return;
-        }
-
-        if (loginType === 'Velops' && velopsPassword !== 'LetmeinVelops') {
-            setError('Invalid Velops Password');
             return;
         }
 
@@ -269,7 +246,7 @@ const Login = () => {
                     // Fallback to existing data if this fails, though likely generic
                 }
 
-                login(tenantUrl, token, userData, loginType);
+                login(tenantUrl, token, userData);
                 navigate('/prerequisites');
             } else {
                 // If not 200 (unexpected), show error page
@@ -363,31 +340,6 @@ const Login = () => {
 
                 <div className="glass-panel rounded-3xl shadow-2xl shadow-black/50 p-8 flex flex-col gap-6 backdrop-blur-3xl border border-white/10 relative z-10 bg-slate-900/60">
 
-                    {/* Common Login Type Selection - Visible for ALL methods */}
-                    <div className="space-y-4 border-b border-white/10 pb-4">
-                        <div className="space-y-1">
-                            <label className="block text-sm font-medium text-slate-300 ml-1">Login Type</label>
-                            <select
-                                value={loginType}
-                                onChange={(e) => setLoginType(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-white/10 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
-                            >
-                                <option value="PMO">PMO Login</option>
-                                <option value="Velops">Velops Login</option>
-                            </select>
-                        </div>
-
-                        {loginType === 'Velops' && (
-                            <Input
-                                label="Velops Password"
-                                placeholder="Enter password..."
-                                value={velopsPassword}
-                                onChange={(e) => setVelopsPassword(e.target.value)}
-                                type="password"
-                            />
-                        )}
-                    </div>
-
                     {/* Dropzone Area */}
                     <div
                         {...getRootProps()}
@@ -465,8 +417,6 @@ const Login = () => {
                             </div>
                         </>
                     )}
-
-
 
                     {error && (
                         <motion.div

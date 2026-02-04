@@ -44,7 +44,6 @@ const SidebarLayout = () => {
                 </div>
 
                 <nav className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
-                    {/* Dashboard - Visible to All */}
                     <NavLink
                         to="/dashboard"
                         end
@@ -57,7 +56,6 @@ const SidebarLayout = () => {
                         Dashboard
                     </NavLink>
 
-                    {/* Security Roles - Visible to All */}
                     <NavLink
                         to="/dashboard/roles"
                         className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
@@ -69,7 +67,61 @@ const SidebarLayout = () => {
                         Security Roles
                     </NavLink>
 
-                    {/* Jira Tickets - Visible to All */}
+                    <NavLink
+                        to="/dashboard/idm-deployment"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <Upload className="w-5 h-5" />
+                        IDM Deployment
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/ion"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <Cloud className="w-5 h-5" />
+                        ION
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/ai"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <BrainCircuit className="w-5 h-5" />
+                        Artificial Intelligence
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/rpa"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <Bot className="w-5 h-5" />
+                        RPA
+                    </NavLink>
+
+                    <NavLink
+                        to="/dashboard/idp"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <FileSearch className="w-5 h-5" />
+                        IDP
+                    </NavLink>
+
                     <NavLink
                         to="/dashboard/jira"
                         className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
@@ -80,66 +132,6 @@ const SidebarLayout = () => {
                         <Ticket className="w-5 h-5" />
                         Jira Tickets
                     </NavLink>
-
-                    {/* Restricted Routes - Only for Velops Login */}
-                    {user?.loginType === 'Velops' && (
-                        <>
-                            <NavLink
-                                to="/dashboard/idm-deployment"
-                                className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
-                                    ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
-                                    : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
-                                    }`}
-                            >
-                                <Upload className="w-5 h-5" />
-                                IDM Deployment
-                            </NavLink>
-
-                            <NavLink
-                                to="/dashboard/ion"
-                                className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
-                                    ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
-                                    : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
-                                    }`}
-                            >
-                                <Cloud className="w-5 h-5" />
-                                ION
-                            </NavLink>
-
-                            <NavLink
-                                to="/dashboard/ai"
-                                className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
-                                    ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
-                                    : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
-                                    }`}
-                            >
-                                <BrainCircuit className="w-5 h-5" />
-                                Artificial Intelligence
-                            </NavLink>
-
-                            <NavLink
-                                to="/dashboard/rpa"
-                                className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
-                                    ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
-                                    : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
-                                    }`}
-                            >
-                                <Bot className="w-5 h-5" />
-                                RPA
-                            </NavLink>
-
-                            <NavLink
-                                to="/dashboard/idp"
-                                className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
-                                    ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
-                                    : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
-                                    }`}
-                            >
-                                <FileSearch className="w-5 h-5" />
-                                IDP
-                            </NavLink>
-                        </>
-                    )}
                 </nav>
 
                 <div className="p-6 border-t border-slate-700/50 bg-slate-900/30 backdrop-blur-md">

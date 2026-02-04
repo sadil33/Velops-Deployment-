@@ -32,9 +32,9 @@ export const AuthProvider = ({ children }) => {
     const [loginCount, setLoginCount] = useState(() => getStoredCount('infor_login_count'));
     const [deploymentCount, setDeploymentCount] = useState(() => getStoredCount('infor_deployment_count'));
 
-    const login = async (tenantUrl, token, userData, loginType = 'PMO') => {
+    const login = async (tenantUrl, token, userData) => {
         const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
-        const sessionData = { tenantUrl, token, userData, userId, loginType };
+        const sessionData = { tenantUrl, token, userData, userId };
         setUser(sessionData);
         // Persist session
         localStorage.setItem('infor_session', JSON.stringify(sessionData));

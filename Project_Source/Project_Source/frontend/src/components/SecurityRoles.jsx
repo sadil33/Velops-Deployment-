@@ -26,40 +26,36 @@ const SecurityRoles = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchRoles = async () => {
-        try {
-            setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const res = await axios.post(`${apiUrl}/api/proxy`, {
-                tenantUrl: user.tenantUrl,
-                endpoint: 'ifsservice/usermgt/v2/users/me',
-                token: user.token,
-                method: 'GET'
-            });
-
-            const userList = res.data?.response?.userlist;
-            if (userList && userList.length > 0) {
-                setGroups(userList[0].groups || []);
-            } else {
-                setGroups([]);
-            }
-
-        } catch (err) {
-            console.error("Security Roles Fetch Error:", err);
-            const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch security roles.';
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                setLoading(true);
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                const res = await axios.post(`${apiUrl}/api/proxy`, {
+                    tenantUrl: user.tenantUrl,
+                    endpoint: 'ifsservice/usermgt/v2/users/me',
+                    token: user.token,
+                    method: 'GET'
+                });
+
+                const userList = res.data?.response?.userlist;
+                if (userList && userList.length > 0) {
+                    setGroups(userList[0].groups || []);
+                } else {
+                    setGroups([]);
+                }
+
+            } catch (err) {
+                console.error("Security Roles Fetch Error:", err);
+                const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch security roles.';
+                setError(errorMessage);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchRoles();
     }, [user]);
-
-    const handleRefresh = () => {
-        fetchRoles();
-    };
 
     // Comparison Logic
     // Create a map of user's active roles (normalize to lowercase for case-insensitive matching)
@@ -154,21 +150,7 @@ const SecurityRoles = () => {
                         </div>
                         <div>
                             <h2 className="text-3xl font-black text-white tracking-tight">Active Roles</h2>
-                            <div className="flex items-center gap-4">
-                                <p className="text-slate-400 font-semibold">Total: {groups.length} roles assigned</p>
-                                <button
-                                    onClick={handleRefresh}
-                                    className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg transition-colors border border-white/5 hover:border-white/20"
-                                    title="Refresh Roles"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}>
-                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                                        <path d="M3 3v5h5" />
-                                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                                        <path d="M16 21h5v-5" />
-                                    </svg>
-                                </button>
-                            </div>
+                            <p className="text-slate-400 font-semibold">Total: {groups.length} roles assigned</p>
                         </div>
                     </div>
 
