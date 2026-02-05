@@ -1489,7 +1489,7 @@ app.post('/api/ai/optimization/quests', upload.single('file'), async (req, res) 
 
 // Jira Integration Endpoint
 app.post('/api/jira/tickets', async (req, res) => {
-  const { summary, description, priority = 'Medium', issuetype = 'Task' } = req.body;
+  const { summary, description, priority = 'Medium', issuetype = 'Task', projectKey } = req.body;
 
   if (!summary || !description) {
     return res.status(400).json({ error: 'Summary and Description are required.' });
@@ -1498,7 +1498,8 @@ app.post('/api/jira/tickets', async (req, res) => {
   // Credentials from environment variables
   const JIRA_EMAIL = process.env.JIRA_EMAIL;
   const JIRA_API_TOKEN = process.env.JIRA_API_TOKEN;
-  const PROJECT_KEY = process.env.PROJECT_KEY || 'KAN';
+  // Use provided projectKey or fallback to env/default
+  const PROJECT_KEY = projectKey || process.env.PROJECT_KEY || 'KAN';
 
   try {
     const authString = Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString('base64');

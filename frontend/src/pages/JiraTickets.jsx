@@ -10,7 +10,8 @@ const JiraTickets = () => {
         summary: '',
         description: '',
         priority: 'Medium',
-        issuetype: 'Task'
+        issuetype: 'Task',
+        projectKey: 'KAN'
     });
     const [creatingJira, setCreatingJira] = useState(false);
     const [jiraResult, setJiraResult] = useState(null);
@@ -24,7 +25,7 @@ const JiraTickets = () => {
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const response = await axios.post(`${apiUrl}/api/jira/tickets`, jiraForm);
             setJiraResult(response.data);
-            setJiraForm({ summary: '', description: '', priority: 'Medium', issuetype: 'Task' });
+            setJiraForm({ summary: '', description: '', priority: 'Medium', issuetype: 'Task', projectKey: 'KAN' });
         } catch (error) {
             console.error("Jira Creation Failed:", error);
             setJiraResult({ success: false, error: error.response?.data?.error || "Failed to create ticket" });
@@ -85,6 +86,22 @@ const JiraTickets = () => {
                     )}
 
                     <form onSubmit={handleJiraSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Project Key</label>
+                                <div className="relative">
+                                    <select
+                                        value={jiraForm.projectKey}
+                                        onChange={e => setJiraForm({ ...jiraForm, projectKey: e.target.value })}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-infor-red/50 appearance-none transition-all hover:bg-black/50 cursor-pointer"
+                                    >
+                                        <option value="KAN">KAN</option>
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Summary *</label>
                             <input
