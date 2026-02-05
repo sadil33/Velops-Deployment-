@@ -13,7 +13,10 @@ const Prerequisites = () => {
     const { setRequirements } = useAuth();
     const navigate = useNavigate();
 
-    const [extractedRoles, setExtractedRoles] = useState([]);
+    const [extractedRoles, setExtractedRoles] = useState(() => {
+        const saved = localStorage.getItem('infor_extracted_roles');
+        return saved ? JSON.parse(saved) : [];
+    });
 
     const onDrop = useCallback(async (acceptedFiles) => {
         const file = acceptedFiles[0];
@@ -42,6 +45,7 @@ const Prerequisites = () => {
                 setError("No security roles were found in this document. Please check the file content.");
             } else {
                 setExtractedRoles(roles);
+                localStorage.setItem('infor_extracted_roles', JSON.stringify(roles));
                 // Don't auto-navigate, let user review
             }
 
@@ -162,7 +166,10 @@ const Prerequisites = () => {
                         {extractedRoles.length > 0 ? (
                             <>
                                 <Button
-                                    onClick={() => setExtractedRoles([])} // Reset
+                                    onClick={() => {
+                                        setExtractedRoles([]);
+                                        localStorage.removeItem('infor_extracted_roles');
+                                    }}
                                     className="bg-white/10 text-white hover:bg-white/20 border border-white/5"
                                 >
                                     Cancel

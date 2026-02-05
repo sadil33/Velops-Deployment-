@@ -6,9 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const ChatWithDocument = () => {
     const { user } = useAuth();
-    const [messages, setMessages] = useState([
-        { role: 'system', content: 'Hello! I can answer questions about the document you uploaded in Prerequisites. What would you like to know?' }
-    ]);
+    const [messages, setMessages] = useState(() => {
+        const saved = localStorage.getItem('infor_chat_history');
+        return saved ? JSON.parse(saved) : [
+            { role: 'system', content: 'Hello! I can answer questions about the document you uploaded in Prerequisites. What would you like to know?' }
+        ];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('infor_chat_history', JSON.stringify(messages));
+    }, [messages]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
@@ -52,7 +59,9 @@ const ChatWithDocument = () => {
     };
 
     const clearHistory = () => {
-        setMessages([{ role: 'system', content: 'History cleared. Ready for new questions.' }]);
+        const welcomeMsg = [{ role: 'system', content: 'History cleared. Ready for new questions.' }];
+        setMessages(welcomeMsg);
+        localStorage.setItem('infor_chat_history', JSON.stringify(welcomeMsg));
     };
 
     return (

@@ -71,6 +71,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setRequirements([]);
         localStorage.removeItem('infor_session');
+        localStorage.removeItem('infor_extracted_roles');
+        localStorage.removeItem('infor_chat_history');
     };
 
     const incrementDeployments = () => {
