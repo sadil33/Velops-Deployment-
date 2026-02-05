@@ -47,8 +47,13 @@ const Prerequisites = () => {
 
         } catch (err) {
             console.error(err);
-            const msg = err.response?.data?.error || "Failed to parse the file. Please try again.";
-            setError(msg);
+            // Check for specific GenAI failure
+            if (err.response?.data?.error === "Extraction failed in genai") {
+                setError("Extraction failed in genai");
+            } else {
+                const msg = err.response?.data?.error || "Failed to parse the file. Please try again.";
+                setError(msg);
+            }
         } finally {
             setUploading(false);
         }

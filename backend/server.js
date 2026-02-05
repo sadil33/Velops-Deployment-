@@ -110,7 +110,8 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const { extractText } = require('./services/fileParser');
 const { extractRolesFromText } = require('./services/roleExtractor'); // Legacy regex extractor
-const { extractDataWithGemini } = require('./services/geminiService'); // New AI extractor
+const { extractDataWithGemini, setDocumentContext, chatWithDocument } = require('./services/geminiService'); // New AI extractor
+
 
 app.post('/api/parse', upload.single('file'), async (req, res) => {
   if (!req.file) {
@@ -124,6 +125,9 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     // Extract text from the file (OCR or Text)
     const text = await extractText(req.file);
     console.log(`[Parse] Extracted text length: ${text.length} chars.`);
+
+    // Set context for potential chat later
+    setDocumentContext(text);
 
     let roles = [];
 
@@ -140,11 +144,45 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     res.json({ roles });
   } catch (error) {
     console.error('[Parse Error]', error.message);
+
+    // Check if it's a Gemini error
+    if (error.message.includes('Extraction failed') || error.message.includes('generative ai failed') || error.message.includes('GoogleGenerativeAI') || error.message.includes('Failed to extract')) {
+      return res.status(500).json({ error: "Extraction failed in genai" });
+    }
+
     res.status(500).json({ error: error.message });
   }
 });
 
+// Chat with Document Endpoint
+// Chat with Document Endpoint
+app.post('/api/chat', async (req, res) => {
+  const { question, token, tenantUrl } = req.body;
+
+  if (!question) {
+    return res.status(400).json({ error: 'Question is required' });
+  }
+
+  // Basic validation for auth
+  if (!token || !tenantUrl) {
+    return res.status(400).json({ error: 'Missing authentication (token/tenantUrl)' });
+  }
+
+  try {
+    console.log(`[Chat] Question: ${question}`);
+    console.log(`[Chat] Using Tenant: ${tenantUrl}`);
+
+    const answer = await chatWithDocument(question, token, tenantUrl);
+    res.json({ answer });
+  } catch (error) {
+    console.error('[Chat Error]', error.message);
+    const code = error.message.includes("No document context") ? 400 : 500;
+    res.status(code).json({ error: error.message });
+  }
+});
+
 // ION Python Libraries Deployment Endpoint
+
 app.post('/api/ion-libraries', upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });

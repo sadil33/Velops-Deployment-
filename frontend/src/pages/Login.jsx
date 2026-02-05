@@ -115,6 +115,7 @@ const Login = () => {
                     }
                 } catch (e) {
                     console.error("SSO Handle Error", e);
+                    setError(`SSO Login Failed: ${e.message}`); // Show error to user
                     setShowLogin(true);
                 }
 

@@ -1,8 +1,9 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch } from 'lucide-react';
+import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch, MessageSquare } from 'lucide-react';
 import Dashboard from '../pages/Dashboard';
 import SecurityRoles from './SecurityRoles';
+import ChatWithDocument from '../pages/ChatWithDocument';
 import IDMDeployment from '../pages/IDMDeployment';
 import ION from '../pages/ION';
 import ArtificialIntelligence from '../pages/ArtificialIntelligence';
@@ -25,7 +26,8 @@ const SidebarLayout = () => {
     const isRPA = currentPath.includes('/rpa');
     const isIDP = currentPath.includes('/idp');
     const isJira = currentPath.includes('/jira');
-    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP;
+    const isChat = currentPath.includes('/chat');
+    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP && !isChat;
 
     const handleLogout = () => {
         logout();
@@ -67,6 +69,18 @@ const SidebarLayout = () => {
                     >
                         <Shield className="w-5 h-5" />
                         Security Roles
+                    </NavLink>
+
+                    {/* Chat with Document - Visible to All */}
+                    <NavLink
+                        to="/dashboard/chat"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <MessageSquare className="w-5 h-5" />
+                        Chat with Document
                     </NavLink>
 
                     {/* Jira Tickets - Visible to All */}
@@ -198,6 +212,10 @@ const SidebarLayout = () => {
 
                     <div style={{ display: isJira ? 'block' : 'none' }}>
                         <JiraTickets />
+                    </div>
+
+                    <div style={{ display: isChat ? 'block' : 'none' }}>
+                        <ChatWithDocument />
                     </div>
                 </div>
             </main>
