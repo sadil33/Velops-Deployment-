@@ -11,6 +11,189 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// CSP GenAI Check Endpoint
+app.post('/api/csp/genai/check', async (req, res) => {
+  const { tenantUrl, token } = req.body;
+
+  if (!tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const targetUrl = `${cleanTenantUrl}/GENAI/chatsvc/api/v1/prompt`;
+
+    console.log(`[CSP GenAI Check] Checking provisioning at: ${targetUrl}`);
+
+    const response = await axios.post(targetUrl, {
+      config: {
+        temperature: 1
+      },
+      prompt: "Hello World"
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'x-infor-logicalidprefix': 'lid://infor.colemanddp'
+      },
+      validateStatus: function (status) {
+        return status < 500; // Resolve even if 4xx to handle "not provisioned" gracefully if it returns 404/403
+      }
+    });
+
+    console.log(`[CSP GenAI Check] Status: ${response.status}`);
+
+    // We consider it provisioned if we get a 200 OK
+    const isProvisioned = response.status === 200;
+
+    res.json({
+      isProvisioned,
+      status: response.status,
+      data: response.data
+    });
+
+  } catch (error) {
+    console.error('[CSP GenAI Check Error]', error.message);
+    // If network error or other issues, assume not provisioned or error
+    res.status(500).json({
+      isProvisioned: false,
+      error: error.message
+    });
+  }
+});
+
+// CSP Ion-Services Check Endpoint
+app.post('/api/csp/ion/check', async (req, res) => {
+  const { tenantUrl, token } = req.body;
+
+  if (!tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const targetUrl = `${cleanTenantUrl}/IONSERVICES/api/ion/messaging/service/ping`;
+
+    console.log(`[CSP Ion Check] Checking provisioning at: ${targetUrl}`);
+
+    const response = await axios.get(targetUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      validateStatus: function (status) {
+        return status < 500;
+      }
+    });
+
+    console.log(`[CSP Ion Check] Status: ${response.status}`);
+
+    // Provisioned if 200 OK
+    const isProvisioned = response.status === 200;
+
+    res.json({
+      isProvisioned,
+      status: response.status,
+      data: response.data
+    });
+
+  } catch (error) {
+    console.error('[CSP Ion Check Error]', error.message);
+    res.status(500).json({
+      isProvisioned: false,
+      error: error.message
+    });
+  }
+});
+
+// CSP Data-Fabric Check Endpoint
+app.post('/api/csp/datafabric/check', async (req, res) => {
+  const { tenantUrl, token } = req.body;
+
+  if (!tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const targetUrl = `${cleanTenantUrl}/DATAFABRIC/datalake/v2/ping`;
+
+    console.log(`[CSP Data-Fabric Check] Checking provisioning at: ${targetUrl}`);
+
+    const response = await axios.get(targetUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      validateStatus: function (status) {
+        return status < 500;
+      }
+    });
+
+    console.log(`[CSP Data-Fabric Check] Status: ${response.status}`);
+
+    // Provisioned if 200 OK
+    const isProvisioned = response.status === 200;
+
+    res.json({
+      isProvisioned,
+      status: response.status,
+      data: response.data
+    });
+
+  } catch (error) {
+    console.error('[CSP Data-Fabric Check Error]', error.message);
+    res.status(500).json({
+      isProvisioned: false,
+      error: error.message
+    });
+  }
+});
+
+// CSP Infor-AI Check Endpoint
+app.post('/api/csp/inforai/check', async (req, res) => {
+  const { tenantUrl, token } = req.body;
+
+  if (!tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const targetUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/version`;
+
+    console.log(`[CSP Infor-AI Check] Checking provisioning at: ${targetUrl}`);
+
+    const response = await axios.get(targetUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      validateStatus: function (status) {
+        return status < 500;
+      }
+    });
+
+    console.log(`[CSP Infor-AI Check] Status: ${response.status}`);
+
+    // Provisioned if 200 OK
+    const isProvisioned = response.status === 200;
+
+    res.json({
+      isProvisioned,
+      status: response.status,
+      data: response.data
+    });
+
+  } catch (error) {
+    console.error('[CSP Infor-AI Check Error]', error.message);
+    res.status(500).json({
+      isProvisioned: false,
+      error: error.message
+    });
+  }
+});
+
 // Proxy Endpoint
 app.post('/api/auth/token', async (req, res) => {
   const { clientId, clientSecret, code, redirectUri, tokenUrl } = req.body;
@@ -837,6 +1020,115 @@ app.post('/api/ion-workflow', upload.single('file'), async (req, res) => {
     });
   }
 });
+
+// ION Data Lake Jobs Endpoint
+app.post('/api/ion-datalake-jobs', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const { tenantUrl, token } = req.query;
+
+  if (!tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing tenantUrl or token' });
+  }
+
+  try {
+    console.log(`[ION Data Lake] Processing file: ${req.file.originalname}`);
+
+    // Read file content as text
+    const queryContent = req.file.buffer.toString('utf-8');
+
+    // Make request to Data Lake Jobs API
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const dataLakeUrl = `${cleanTenantUrl}/DATAFABRIC/compass/v2/jobs`;
+    console.log(`[ION Data Lake] Sending to: ${dataLakeUrl}`);
+
+    // The query is sent as the body. Content-Type should be text/plain or application/sql depending on the API.
+    // The requirement implies "dropping a file with the query which should be used as a body".
+    // Assuming text/plain based on "accepts any type of document" but content is query.
+
+    const response = await axios.post(dataLakeUrl, queryContent, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain'
+      }
+    });
+
+    console.log(`[ION Data Lake] Success for: ${req.file.originalname}`);
+    res.json({
+      success: true,
+      filename: req.file.originalname,
+      response: response.data
+    });
+
+  } catch (error) {
+    console.error('[ION Data Lake Error]', error.message);
+    console.error('[ION Data Lake Error Details]', error.response?.data || error);
+    res.status(500).json({
+      error: error.response?.data?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+// IDP Import DPF Endpoint
+app.post('/api/idp/import-dpf', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const { tenantUrl, token, ver } = req.query;
+
+  if (!tenantUrl || !token || !ver) {
+    return res.status(400).json({ error: 'Missing tenantUrl, token, or ver' });
+  }
+
+  try {
+    console.log(`[IDP Import DPF] Processing file: ${req.file.originalname}`);
+    console.log(`[IDP Import DPF] Version: ${ver}`);
+
+    // Construct FormData
+    const FormData = require('form-data');
+    const form = new FormData();
+
+    // Append 'ver' parameter
+    form.append('ver', ver);
+
+    // Append 'datajsonfile' (file)
+    form.append('datajsonfile', req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype || 'application/octet-stream' // Default if unknown
+    });
+
+    // Make request to IDP API
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const idpUrl = `${cleanTenantUrl}/COLEMANDDP/iddpuisvc/ui/v1/ImportDPF`;
+    console.log(`[IDP Import DPF] Sending to: ${idpUrl}`);
+
+    const response = await axios.post(idpUrl, form, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...form.getHeaders() // Add Content-Type with boundary
+      }
+    });
+
+    console.log(`[IDP Import DPF] Success for: ${req.file.originalname}`);
+    res.json({
+      success: true,
+      filename: req.file.originalname,
+      response: response.data
+    });
+
+  } catch (error) {
+    console.error('[IDP Import DPF Error]', error.message);
+    console.error('[IDP Import DPF Error Details]', error.response?.data || error);
+    res.status(500).json({
+      error: error.response?.data?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
 // IDM Configuration Import Endpoint
 app.post('/api/idm-config-import', upload.single('file'), async (req, res) => {
   if (!req.file) {
@@ -1517,13 +1809,6 @@ app.post('/api/jira/tickets', async (req, res) => {
               text: description
             }
           ]
-        },
-        // Appending text akin to the python snippet example
-        {
-          type: "paragraph",
-          content: [
-            { type: "text", text: "\n\nCreated via Coleman AI Dashboard" }
-          ]
         }
       ]
     };
@@ -1539,9 +1824,11 @@ app.post('/api/jira/tickets', async (req, res) => {
     };
 
     console.log(`[Jira] Creating ticket: ${summary}`);
+    console.log(`[Jira] Project Key: ${PROJECT_KEY}`);
+    console.log(`[Jira] Full Payload:`, JSON.stringify(payload, null, 2));
 
     const response = await axios.post(
-      'https://adil-shaik.atlassian.net/rest/api/3/issue',
+      'https://infor.atlassian.net/rest/api/3/issue',
       payload,
       {
         headers: {
@@ -1558,7 +1845,7 @@ app.post('/api/jira/tickets', async (req, res) => {
     }
 
     const { key } = response.data;
-    const ticketUrl = `https://adil-shaik.atlassian.net/browse/${key}`;
+    const ticketUrl = `https://infor.atlassian.net/browse/${key}`;
 
     console.log(`[Jira] Ticket Created: ${key}`);
     res.json({

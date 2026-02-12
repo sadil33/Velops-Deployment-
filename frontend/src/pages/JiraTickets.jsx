@@ -9,9 +9,9 @@ const JiraTickets = () => {
     const [jiraForm, setJiraForm] = useState({
         summary: '',
         description: '',
-        priority: 'Medium',
+        priority: 'Major',
         issuetype: 'Task',
-        projectKey: 'KAN'
+        projectKey: 'MTMS'
     });
     const [creatingJira, setCreatingJira] = useState(false);
     const [jiraResult, setJiraResult] = useState(null);
@@ -25,7 +25,7 @@ const JiraTickets = () => {
             const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const response = await axios.post(`${apiUrl}/api/jira/tickets`, jiraForm);
             setJiraResult(response.data);
-            setJiraForm({ summary: '', description: '', priority: 'Medium', issuetype: 'Task', projectKey: 'KAN' });
+            setJiraForm({ summary: '', description: '', priority: 'Major', issuetype: 'Task', projectKey: 'MTMS' });
         } catch (error) {
             console.error("Jira Creation Failed:", error);
             setJiraResult({ success: false, error: error.response?.data?.error || "Failed to create ticket" });
@@ -95,7 +95,9 @@ const JiraTickets = () => {
                                         onChange={e => setJiraForm({ ...jiraForm, projectKey: e.target.value })}
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-infor-red/50 appearance-none transition-all hover:bg-black/50 cursor-pointer"
                                     >
-                                        <option value="KAN">KAN</option>
+                                        <option value="MTMS">MTMS</option>
+                                        <option value="COLDEVSUP">COLDEVSUP</option>
+                                        <option value="SAASCLOUD">SAASCLOUD</option>
                                     </select>
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                                 </div>
@@ -133,7 +135,7 @@ const JiraTickets = () => {
                                         onChange={e => setJiraForm({ ...jiraForm, priority: e.target.value })}
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-infor-red/50 appearance-none transition-all hover:bg-black/50 cursor-pointer"
                                     >
-                                        {['Highest', 'High', 'Medium', 'Low', 'Lowest'].map(p => <option key={p} value={p}>{p}</option>)}
+                                        {['Blocker', 'Critical', 'Major', 'Minor', 'Trivial'].map(p => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                                 </div>

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap, Copy, Check } from 'lucide-react';
+import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap, Copy, Check, TicketPercent } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { CSPTools } from '../components/SecurityRoles';
 
 const container = {
     hidden: { opacity: 0 },
@@ -38,6 +39,7 @@ const Dashboard = () => {
     const tenantId = getTenantId();
     const userName = user?.userData?.response?.userlist?.[0]?.displayName || 'Administrator';
     const userId = user?.userId || 'N/A';
+    const isPMO = user?.loginType === 'PMO';
 
     const [copied, setCopied] = React.useState(false);
 
@@ -228,40 +230,46 @@ const Dashboard = () => {
                                 <p className="text-xs text-slate-400">Validate permissions</p>
                             </div>
                         </div>
-                        <div
-                            onClick={() => navigate('/dashboard/ion')}
-                            className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
-                        >
-                            <div className="p-2 bg-purple-500/20 w-fit rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
-                                <Clock className="w-5 h-5" />
+                        {isPMO ? (
+                            <div
+                                onClick={() => navigate('/dashboard/jira')}
+                                className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
+                            >
+                                <div className="p-2 bg-orange-500/20 w-fit rounded-lg text-orange-400 group-hover:scale-110 transition-transform">
+                                    <TicketPercent className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-white font-bold">Jira Ticket</p>
+                                    <p className="text-xs text-slate-400">Create or view tickets</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-white font-bold">ION History</p>
-                                <p className="text-xs text-slate-400">View recent workflows</p>
+                        ) : (
+                            <div
+                                onClick={() => navigate('/dashboard/ion')}
+                                className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
+                            >
+                                <div className="p-2 bg-purple-500/20 w-fit rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
+                                    <Clock className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <p className="text-white font-bold">ION History</p>
+                                    <p className="text-xs text-slate-400">View recent workflows</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {/* System Status */}
-                <div className="glass-panel rounded-3xl p-8 min-h-[280px] shadow-xl bg-slate-900/40 border border-white/5">
-                    <h2 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+                {/* CSP Tools Status */}
+                <div className="glass-panel rounded-3xl p-6 min-h-[280px] shadow-xl bg-slate-900/40 border border-white/5 flex flex-col">
+                    <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
                         <span className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400 border border-emerald-500/20">
-                            <Activity className="w-6 h-6" />
+                            <ShieldCheck className="w-5 h-5" />
                         </span>
-                        Health
+                        CSP Tools
                     </h2>
-                    <div className="space-y-4">
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/5 group cursor-default">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] group-hover:scale-125 transition-transform animate-pulse"></div>
-                                <div className="flex-1">
-                                    <p className="text-slate-200 font-semibold text-sm">Node {i}0{i}</p>
-                                    <p className="text-slate-500 text-xs">{12 * i}ms latency</p>
-                                </div>
-                                <span className="text-slate-500 font-medium text-[10px] ml-auto bg-white/5 px-2 py-1 rounded-full border border-white/5">OK</span>
-                            </div>
-                        ))}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 max-h-[400px]">
+                        <CSPTools className="grid grid-cols-1 gap-2" compact={true} />
                     </div>
                 </div>
             </motion.div>

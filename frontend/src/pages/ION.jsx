@@ -16,7 +16,8 @@ const ION = () => {
         { id: 'connection-point', label: 'Connection Point', icon: Database },
         { id: 'business-rules', label: 'Business Rules', icon: FileCode },
         { id: 'scripting', label: 'Scripting', icon: Code },
-        { id: 'object-schemas', label: 'Object Schemas', icon: FileJson }
+        { id: 'object-schemas', label: 'Object Schemas', icon: FileJson },
+        { id: 'data-lake', label: 'Data Lake', icon: Database }
     ];
 
     return (
@@ -72,6 +73,7 @@ const ION = () => {
                         {activeTab === 'business-rules' && <BusinessRulesTab />}
                         {activeTab === 'scripting' && <ScriptingTab />}
                         {activeTab === 'object-schemas' && <ObjectSchemasTab />}
+                        {activeTab === 'data-lake' && <DataLakeTab />}
                     </motion.div>
                 </div>
             </div>
@@ -1935,6 +1937,247 @@ const ObjectSchemasTab = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+        </div>
+    );
+};
+
+const DataLakeTab = () => {
+    const { user } = useAuth();
+    const [uploading, setUploading] = useState(false);
+    const [uploadResults, setUploadResults] = useState([]);
+    const [selectedFiles, setSelectedFiles] = useState([]);
+
+    const onDrop = useCallback((acceptedFiles) => {
+        if (!acceptedFiles?.length) return;
+        // Accept only one file at a time for this use case if needed, or multiple. 
+        // User said "dropping a file", implying singular, but dropzone supports multiple. 
+        // We will allow multiple but the backend logs show one by one processing if we loop.
+        // However, the user said "drop a file with the query which should be used as a body".
+        // Use inclusive logic.
+        setSelectedFiles(prev => [...prev, ...acceptedFiles]);
+    }, []);
+
+    const removeFile = (fileToRemove) => {
+        setSelectedFiles(prev => prev.filter(f => f !== fileToRemove));
+    };
+
+    const handleRun = async () => {
+        if (selectedFiles.length === 0) return;
+
+        setUploading(true);
+        setUploadResults([]);
+
+        try {
+            const results = await Promise.all(
+                selectedFiles.map(async (file) => {
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        await axios.post(
+                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ion-datalake-jobs`,
+                            formData,
+                            {
+                                headers: {
+                                    'Content-Type': 'multipart/form-data',
+                                },
+                                params: {
+                                    tenantUrl: user.tenantUrl,
+                                    token: user.token
+                                }
+                            }
+                        );
+
+                        return {
+                            filename: file.name,
+                            status: 'success',
+                            message: 'Job submitted successfully'
+                        };
+                    } catch (error) {
+                        return {
+                            filename: file.name,
+                            status: 'error',
+                            message: error.response?.data?.error || error.message
+                        };
+                    }
+                })
+            );
+
+            setUploadResults(results);
+            // Optionally clear selected files on success
+            setSelectedFiles([]);
+
+        } catch (error) {
+            console.error('Data Lake job error:', error);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        multiple: true
+    });
+
+    return (
+        <div className="space-y-8">
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-white">Data Lake Jobs</h3>
+                </div>
+
+                {/* Drop Zone */}
+                <div
+                    {...getRootProps()}
+                    className={`
+                    p-12 text-center cursor-pointer transition-all duration-300
+                    border-2 border-dashed rounded-2xl
+                    ${isDragActive
+                            ? 'border-infor-red bg-red-500/10 scale-[1.01]'
+                            : 'border-white/10 hover:border-infor-red/50 hover:bg-white/5'
+                        }
+                    ${uploading ? 'opacity-50 pointer-events-none' : ''}
+                `}
+                >
+                    <input {...getInputProps()} />
+
+                    <motion.div
+                        animate={{
+                            scale: isDragActive ? 1.1 : 1,
+                            rotate: isDragActive ? 5 : 0
+                        }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                        className="flex flex-col items-center gap-4"
+                    >
+                        {uploading ? (
+                            <>
+                                <Loader2 className="w-16 h-16 text-infor-red animate-spin" />
+                                <p className="text-lg font-semibold text-infor-red">Submitting jobs...</p>
+                            </>
+                        ) : (
+                            <>
+                                <div className="w-20 h-20 bg-white/5 text-infor-red rounded-full flex items-center justify-center mb-2">
+                                    <Database className="w-10 h-10" />
+                                </div>
+                                <div>
+                                    <p className="text-lg font-bold text-slate-200">
+                                        {isDragActive ? "Drop query files here..." : "Drag & drop query files"}
+                                    </p>
+                                    <p className="text-sm text-slate-500 mt-2 font-medium">
+                                        or click to browse (files containing SQL queries)
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                    </motion.div>
+                </div>
+
+                {/* Selected Files Preview */}
+                <AnimatePresence>
+                    {selectedFiles.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3"
+                        >
+                            <h4 className="font-bold text-slate-300">Ready to Run</h4>
+                            <div className="grid gap-2">
+                                {selectedFiles.map((file, idx) => (
+                                    <motion.div
+                                        key={`${file.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <File className="w-4 h-4 text-infor-red" />
+                                            <span className="text-sm text-slate-200">{file.name}</span>
+                                            <span className="text-xs text-slate-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                                        </div>
+                                        <button
+                                            onClick={() => removeFile(file)}
+                                            className="p-1 hover:bg-white/10 rounded-full text-slate-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            <div className="flex justify-end pt-2">
+                                <button
+                                    onClick={handleRun}
+                                    disabled={uploading}
+                                    className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-red-900/40 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Running...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4" />
+                                            Run {selectedFiles.length} item(s)
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Results */}
+                <AnimatePresence>
+                    {uploadResults.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="space-y-3"
+                        >
+                            <h4 className="font-bold text-slate-800">Job Results</h4>
+                            {uploadResults.map((result, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.1 }}
+                                    className={`
+                                    flex items-center justify-between p-4 rounded-xl border backdrop-blur-sm
+                                    ${result.status === 'success'
+                                            ? 'bg-emerald-500/10 border-emerald-500/20'
+                                            : 'bg-red-500/10 border-red-500/20'
+                                        }
+                                `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <File className={`w-5 h-5 ${result.status === 'success' ? 'text-green-600' : 'text-red-600'
+                                            }`} />
+                                        <div>
+                                            <p className={`font-semibold ${result.status === 'success' ? 'text-green-800' : 'text-red-800'
+                                                }`}>
+                                                {result.filename}
+                                            </p>
+                                            <p className={`text-xs ${result.status === 'success' ? 'text-green-600' : 'text-red-600'
+                                                }`}>
+                                                {result.message}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {result.status === 'success' ? (
+                                        <CheckCircle2 className="w-6 h-6 text-green-600" />
+                                    ) : (
+                                        <XCircle className="w-6 h-6 text-red-600" />
+                                    )}
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };

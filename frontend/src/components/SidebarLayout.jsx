@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch, MessageSquare } from 'lucide-react';
@@ -28,6 +29,14 @@ const SidebarLayout = () => {
     const isJira = currentPath.includes('/jira');
     const isChat = currentPath.includes('/chat');
     const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP && !isChat;
+
+    // Redirect unauthorized users accessing restricted routes
+    useEffect(() => {
+        const isRestrictedRoute = isIDM || isION || isAI || isRPA || isIDP;
+        if (isRestrictedRoute && user?.loginType !== 'Velops') {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isIDM, isION, isAI, isRPA, isIDP, user, navigate]);
 
     const handleLogout = () => {
         logout();
@@ -189,26 +198,30 @@ const SidebarLayout = () => {
                     {/* Render Security Roles - Mounts/Unmounts normally to fetch fresh data */}
                     {isRoles && <SecurityRoles />}
 
-                    {/* Keep-Alive Components: Always mounted, visibility toggled */}
-                    <div style={{ display: isIDM ? 'block' : 'none' }}>
-                        <IDMDeployment />
-                    </div>
+                    {/* Keep-Alive Components: Always mounted (if permitted), visibility toggled */}
+                    {user?.loginType === 'Velops' && (
+                        <>
+                            <div style={{ display: isIDM ? 'block' : 'none' }}>
+                                <IDMDeployment />
+                            </div>
 
-                    <div style={{ display: isION ? 'block' : 'none' }}>
-                        <ION />
-                    </div>
+                            <div style={{ display: isION ? 'block' : 'none' }}>
+                                <ION />
+                            </div>
 
-                    <div style={{ display: isAI ? 'block' : 'none' }}>
-                        <ArtificialIntelligence />
-                    </div>
+                            <div style={{ display: isAI ? 'block' : 'none' }}>
+                                <ArtificialIntelligence />
+                            </div>
 
-                    <div style={{ display: isRPA ? 'block' : 'none' }}>
-                        <RPA />
-                    </div>
+                            <div style={{ display: isRPA ? 'block' : 'none' }}>
+                                <RPA />
+                            </div>
 
-                    <div style={{ display: isIDP ? 'block' : 'none' }}>
-                        <IDP />
-                    </div>
+                            <div style={{ display: isIDP ? 'block' : 'none' }}>
+                                <IDP />
+                            </div>
+                        </>
+                    )}
 
                     <div style={{ display: isJira ? 'block' : 'none' }}>
                         <JiraTickets />

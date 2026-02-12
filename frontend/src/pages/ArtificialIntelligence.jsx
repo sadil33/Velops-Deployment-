@@ -306,7 +306,7 @@ const DatasetsTab = () => {
     );
 };
 
-const QuestsTab = () => {
+const QuestsTab = ({ createdAlgorithms = [] }) => {
     const { user } = useAuth();
     console.log('[Debug] User Data:', user?.userData);
     const [uploading, setUploading] = useState(false);
@@ -317,6 +317,11 @@ const QuestsTab = () => {
     const [trainNames, setTrainNames] = useState('');
     const [training, setTraining] = useState(false);
     const [trainResults, setTrainResults] = useState(null);
+
+    // Mapping State
+    const [pendingDeployments, setPendingDeployments] = useState([]);
+    const [algoMappings, setAlgoMappings] = useState({});
+    const [showMapper, setShowMapper] = useState(false);
 
     // Deployment Handler
     const onDrop = useCallback((acceptedFiles) => {
@@ -333,13 +338,83 @@ const QuestsTab = () => {
         setUploading(true);
         setUploadResults([]);
 
+        const parsedDeployments = [];
+        const validFiles = [];
+
+        for (let i = 0; i < selectedFiles.length; i++) {
+            const file = selectedFiles[i];
+            try {
+                const text = await file.text();
+                // If it's empty or fails parse, we might skip logic
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (e) {
+                    console.warn(`File ${file.name} is not valid JSON, skipping mapping check.`);
+                    validFiles.push({ fileIndex: i, file, originalJson: null, indicesToMap: [] });
+                    continue;
+                }
+
+                const activities = json.quest?.activities || [];
+                const indicesToMap = activities
+                    .map((act, idx) => ({ ...act, idx }))
+                    .filter(act => act.category === 'APPLY_ALGORITHM')
+                    .map(act => act.idx);
+
+                parsedDeployments.push({
+                    fileIndex: i,
+                    file: file,
+                    originalJson: json,
+                    indicesToMap: indicesToMap
+                });
+                validFiles.push({ fileIndex: i, file, originalJson: json, indicesToMap });
+
+            } catch (e) {
+                console.error("Read error", e);
+            }
+        }
+
+        const needsMapping = parsedDeployments.some(p => p.indicesToMap.length > 0);
+
+        if (needsMapping) {
+            setPendingDeployments(parsedDeployments);
+            setShowMapper(true);
+            setUploading(false);
+        } else {
+            await executeDeployments(validFiles);
+        }
+    };
+
+    const executeDeployments = async (deployments) => {
+        setUploading(true);
         const results = [];
-        for (const file of selectedFiles) {
+
+        for (const deploy of deployments) {
+            let fileToUpload = deploy.file;
+
+            // Apply mappings if valid JSON and mappings exist
+            if (deploy.originalJson && deploy.indicesToMap.length > 0) {
+                const finalJson = { ...deploy.originalJson };
+
+                // Deep copy quest to avoid mutation issues if needed, but shallow copy of activities usually enough
+                // if we are careful.
+
+                deploy.indicesToMap.forEach(idx => {
+                    const key = `${deploy.fileIndex}-${idx}`;
+                    const algoId = algoMappings[key];
+                    if (algoId) {
+                        finalJson.quest.activities[idx].customAlgorithmId = algoId;
+                    }
+                });
+
+                const blob = new Blob([JSON.stringify(finalJson, null, 2)], { type: 'application/json' });
+                fileToUpload = new File([blob], deploy.file.name, { type: 'application/json' });
+            }
+
             try {
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', fileToUpload);
 
-                // Pass username for description enrichment
                 const username = user?.userData?.response?.userlist?.[0]?.displayName || 'Unknown';
 
                 await axios.post(
@@ -356,14 +431,14 @@ const QuestsTab = () => {
                 );
 
                 results.push({
-                    name: file.name,
+                    name: deploy.file.name,
                     status: 'success',
                     message: 'Quest deployed successfully'
                 });
             } catch (error) {
-                console.error(`Quest upload failed for ${file.name}:`, error);
+                console.error(`Quest upload failed for ${deploy.file.name}:`, error);
                 results.push({
-                    name: file.name,
+                    name: deploy.file.name,
                     status: 'error',
                     message: error.response?.data?.error || error.message
                 });
@@ -372,8 +447,11 @@ const QuestsTab = () => {
 
         setUploadResults(results);
         setSelectedFiles([]);
+        setPendingDeployments([]);
+        setAlgoMappings({});
+        setShowMapper(false);
 
-        // Auto-populate input field
+        // Auto-populate train
         const successfulNames = results.filter(r => r.status === 'success').map(r => r.name.replace(/\.[^/.]+$/, ""));
         if (successfulNames.length > 0) {
             setTrainNames(prev => {
@@ -388,11 +466,10 @@ const QuestsTab = () => {
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
-        accept: { 'application/json': ['.json', '.txt'] }, // Accepting txt as per request for JSON payload
+        accept: { 'application/json': ['.json', '.txt'] },
         multiple: true
     });
 
-    // Training Handler
     const handleTrain = async () => {
         if (!trainNames.trim()) return;
         setTraining(true);
@@ -412,16 +489,22 @@ const QuestsTab = () => {
             setTrainResults(response.data);
         } catch (error) {
             console.error("Training failed:", error);
-            setTrainResults({ success: false, results: [] }); // Simple error state
+            setTrainResults({ success: false, results: [] });
         } finally {
             setTraining(false);
         }
     };
 
+    // Filter Logic
+    const getAvailableOptions = (currentKey) => {
+        return createdAlgorithms.filter(algo =>
+            !Object.entries(algoMappings).some(([k, v]) => v === algo.id && k !== currentKey)
+        );
+    };
 
     return (
         <div className="space-y-8">
-            {/* 1. Deploy Quests Section */}
+            {/* Deploy Quests Section */}
             <div className="space-y-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <Upload className="w-5 h-5 text-infor-red" />
@@ -434,6 +517,88 @@ const QuestsTab = () => {
                     <p className="text-lg font-medium text-white mb-2">{uploading ? 'Deploying...' : 'Drop Quest Files (.txt/json)'}</p>
                     <p className="text-sm text-slate-400">files will be parsed and deployed</p>
                 </div>
+
+                {/* Algo Mapping Overlay */}
+                <AnimatePresence>
+                    {showMapper && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                        >
+                            <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+                                <div className="p-6 border-b border-white/10">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <Code2 className="w-5 h-5 text-infor-red" />
+                                        Map Custom Algorithms
+                                    </h3>
+                                    <p className="text-sm text-slate-400 mt-1">
+                                        Select algorithms for 'APPLY_ALGORITHM' activities.
+                                    </p>
+                                </div>
+                                <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                    {pendingDeployments.filter(p => p.indicesToMap.length > 0).map((deploy, i) => (
+                                        <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                                            <div className="flex items-center gap-2 mb-4 text-yellow-400 font-medium border-b border-white/5 pb-2">
+                                                <FileJson className="w-4 h-4" />
+                                                {deploy.file.name}
+                                            </div>
+                                            <div className="space-y-3">
+                                                {deploy.indicesToMap.map(idx => {
+                                                    const activityName = deploy.originalJson.quest.activities[idx].name || `Activity ${idx + 1}`;
+                                                    const key = `${deploy.fileIndex}-${idx}`;
+                                                    const available = getAvailableOptions(key);
+
+                                                    return (
+                                                        <div key={idx} className="flex md:items-center flex-col md:flex-row gap-4 justify-between">
+                                                            <span className="text-sm text-slate-300">{activityName}</span>
+                                                            <select
+                                                                value={algoMappings[key] || ''}
+                                                                onChange={(e) => setAlgoMappings(prev => ({ ...prev, [key]: e.target.value }))}
+                                                                className="bg-black/40 border border-white/20 text-white text-sm rounded-lg p-2.5 focus:ring-infor-red focus:border-infor-red block w-full md:w-64"
+                                                            >
+                                                                <option value="">Select Algorithm...</option>
+                                                                {/* Always show the currently selected one if it exists, plus available ones */}
+                                                                {(algoMappings[key] ? [...available, { id: algoMappings[key], name: createdAlgorithms.find(c => c.id === algoMappings[key])?.name || 'Unknown' }] : available)
+                                                                    // Deduplicate by ID just in case
+                                                                    .filter((v, i, a) => a.findIndex(t => t.id === v.id) === i)
+                                                                    .map(algo => (
+                                                                        <option key={algo.id} value={algo.id}>
+                                                                            {algo.name} (ID: {algo.id})
+                                                                        </option>
+                                                                    ))}
+                                                            </select>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {createdAlgorithms.length === 0 && (
+                                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-200 rounded-xl text-sm">
+                                            Warning: No custom algorithms have been created in this session. You may proceed, but IDs will not be injected.
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-black/40">
+                                    <button
+                                        onClick={() => setShowMapper(false)}
+                                        className="px-4 py-2 text-slate-300 hover:text-white transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => executeDeployments(pendingDeployments)}
+                                        className="px-6 py-2 bg-infor-red hover:bg-[#b00029] text-white font-bold rounded-xl transition-all shadow-lg shadow-infor-red/20"
+                                    >
+                                        Confirm & Deploy
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Selected Files Preview */}
                 <AnimatePresence>
@@ -505,7 +670,7 @@ const QuestsTab = () => {
                 )}
             </div>
 
-            {/* 2. Train Quests Section */}
+            {/* Train Quests Section */}
             <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <BrainCircuit className="w-5 h-5 text-infor-red" />
@@ -549,7 +714,6 @@ const QuestsTab = () => {
 
             {/* Active Quests Display (Previous Implementation Preserved/Modified) */}
             <div className="opacity-50 pointer-events-none filter grayscale">
-                {/* Keeping the old UI just as visual filler or we can remove it. User asked to 'make changes in quests tab', implies replacing or upgrading. I will replace the old static list with just the new functionality for clarity as requested. */}
             </div>
         </div>
     );
@@ -710,7 +874,7 @@ const OptimizationTab = () => {
 };
 
 
-const CustomAlgorithmTab = () => {
+const CustomAlgorithmTab = ({ setCreatedAlgorithms }) => {
     const { user } = useAuth();
     const [codeFiles, setCodeFiles] = useState([]);
     const [hyperparamFiles, setHyperparamFiles] = useState([]);
@@ -805,13 +969,21 @@ const CustomAlgorithmTab = () => {
                         pythonVersion: pythonVersion
                     };
 
-                    await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms`, metadataPayload, {
+                    const metaResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms`, metadataPayload, {
                         params: {
                             tenantUrl: user.tenantUrl,
                             token: user.token,
                             username: user?.userData?.response?.userlist?.[0]?.displayName || 'Unknown' // Pass username
                         }
                     });
+
+                    // Capture ID
+                    const newId = metaResponse.data?.data?.id || metaResponse.data?.data?.customAlgorithmId;
+                    if (newId && setCreatedAlgorithms) {
+                        console.log(`[Algorithm Created] Display Name: ${algoName}, ID: ${newId}`);
+                        setCreatedAlgorithms(prev => [...prev, { name: algoName, id: newId }]);
+                    }
+
                     logStart.steps.find(s => s.step === 'Metadata').status = 'success';
 
                     // 2. Upload Code (Zip)
@@ -1041,6 +1213,7 @@ const CustomAlgorithmTab = () => {
 
 const ArtificialIntelligence = () => {
     const [activeTab, setActiveTab] = useState('datasets');
+    const [createdAlgorithms, setCreatedAlgorithms] = useState([]);
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in duration-500">
@@ -1096,8 +1269,8 @@ const ArtificialIntelligence = () => {
                     className="min-h-[400px]"
                 >
                     {activeTab === 'datasets' && <DatasetsTab />}
-                    {activeTab === 'quests' && <QuestsTab />}
-                    {activeTab === 'algorithm' && <CustomAlgorithmTab />}
+                    {activeTab === 'quests' && <QuestsTab createdAlgorithms={createdAlgorithms} />}
+                    {activeTab === 'algorithm' && <CustomAlgorithmTab setCreatedAlgorithms={setCreatedAlgorithms} />}
                     {activeTab === 'optimization' && <OptimizationTab />}
                 </motion.div>
             </AnimatePresence>
