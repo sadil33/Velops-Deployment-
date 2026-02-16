@@ -34,7 +34,7 @@ const ProcessIDTab = () => {
         setError(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/proxy`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/proxy`,
                 {
                     tenantUrl: user.tenantUrl,
                     token: user.token,
@@ -263,7 +263,7 @@ const JobIDTab = () => {
         setError(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/proxy`,
+                `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/proxy`,
                 {
                     tenantUrl: user.tenantUrl,
                     token: user.token,

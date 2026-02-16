@@ -31,7 +31,7 @@ const Prerequisites = () => {
 
         try {
             // Call our Backend Parsing Endpoint
-            const apiUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
             const res = await axios.post(`${apiUrl}/api/parse`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',

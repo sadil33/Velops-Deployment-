@@ -41,7 +41,7 @@ const ChatWithDocument = () => {
             // Get auth details from user context
             const { token, tenantUrl } = user || {};
 
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL ?? ''}/api/chat`, {
+            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/chat`, {
                 question: userMessage.content,
                 token,
                 tenantUrl
