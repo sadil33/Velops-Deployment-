@@ -73,12 +73,16 @@ const Login = () => {
                         console.log("--------------------------------");
                         // ----------------------------------
 
-                        const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
-                            clientId: config.ci,
-                            clientSecret: config.cs,
-                            code: hasCode,
-                            redirectUri: config.ru || window.location.origin,
-                            tokenUrl: tokenEndpoint
+                        // DEBUG: CHANGED TO GET to test connectivity
+                        // Note: GET requests send data in params, not body.
+                        const tokenRes = await axios.get(`${apiUrl}/api/auth/token`, {
+                            params: {
+                                clientId: config.ci,
+                                clientSecret: config.cs,
+                                code: hasCode,
+                                redirectUri: config.ru || window.location.origin,
+                                tokenUrl: tokenEndpoint
+                            }
                         });
 
                         const { access_token } = tokenRes.data;

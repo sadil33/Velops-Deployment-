@@ -228,6 +228,12 @@ app.post('/api/csp/inforai/check', async (req, res) => {
 });
 
 // Proxy Endpoint
+// DEBUG: Allow GET to test connectivity
+app.get('/api/auth/token', (req, res) => {
+  console.log('[Auth] DEBUG : GET /api/auth/token REACHED!');
+  res.status(405).json({ error: 'GET Method Reached - POST seems blocked', success: false });
+});
+
 app.post('/api/auth/token', async (req, res) => {
   const { clientId, clientSecret, code, redirectUri, tokenUrl } = req.body;
 
