@@ -59,6 +59,20 @@ const Login = () => {
                         const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
                         console.log("Exchanging code for token...");
 
+                        // --- DEBUG: LOG REQUEST DETAILS ---
+                        console.log("--------------------------------");
+                        console.log("DEBUG: SSO Token Request");
+                        console.log("Target URL:", `${apiUrl}/api/auth/token`);
+                        console.log("Payload:", {
+                            clientId: config.ci,
+                            clientSecret: "(Hidden)",
+                            code: hasCode,
+                            redirectUri: config.ru || window.location.origin,
+                            tokenUrl: tokenEndpoint
+                        });
+                        console.log("--------------------------------");
+                        // ----------------------------------
+
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
                             clientId: config.ci,
                             clientSecret: config.cs,
