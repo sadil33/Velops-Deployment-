@@ -17,6 +17,25 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-infor-logicalidprefix']
 }));
+// Request Logger Middleware
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  console.log('[Headers]', JSON.stringify(req.headers));
+  next();
+});
+
+// Process Crash Handlers
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err);
+  console.error(err.stack);
+  // Keep process alive for a moment to flush logs if possible, but usually best to exit.
+  // For debugging connection closed, we want to see this log.
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 app.use(express.json());
 
 // Root Route for Health Check
