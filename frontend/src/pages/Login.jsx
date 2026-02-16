@@ -114,8 +114,9 @@ const Login = () => {
                         setShowLogin(true);
                     }
                 } catch (e) {
+                    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                     console.error("SSO Handle Error", e);
-                    setError(`SSO Login Failed: ${e.message}`); // Show error to user
+                    setError(`SSO Login Failed: ${e.message} (API: ${apiUrl})`); // Show error to user with API URL
                     setShowLogin(true);
                 }
 
