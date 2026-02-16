@@ -13,23 +13,16 @@ services:
         value: production
     autoDeploy: true
 
-  # Frontend Service
-  - type: static
+  # Frontend Service (Web service for API proxying)
+  - type: web
     name: velops-frontend
-    env: static
+    env: node
     plan: free
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: frontend/dist
+    startCommand: cd frontend && npm start
     envVars:
-      - key: VITE_API_BASE_URL
+      - key: BACKEND_URL
         fromService:
           type: web
           name: velops-backend
           property: url
-    routes:
-      - type: rewrite
-        source: /api/*
-        destination: https://velops-backend.onrender.com/api/*
-      - type: rewrite
-        source: /*
-        destination: /index.html
