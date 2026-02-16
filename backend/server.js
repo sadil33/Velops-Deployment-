@@ -256,6 +256,8 @@ app.post('/api/auth/token', async (req, res) => {
     });
 
     console.log('[Auth] Token exchange successful');
+    console.log('[Auth] Response keys:', Object.keys(response.data));
+    console.log('[Auth] Response data:', JSON.stringify(response.data).substring(0, 500));
     res.json(response.data);
 
   } catch (error) {
