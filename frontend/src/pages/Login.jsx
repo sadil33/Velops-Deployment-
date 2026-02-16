@@ -56,7 +56,7 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                         console.log("Exchanging code for token...");
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
@@ -114,9 +114,8 @@ const Login = () => {
                         setShowLogin(true);
                     }
                 } catch (e) {
-                    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                     console.error("SSO Handle Error", e);
-                    setError(`SSO Login Failed: ${e.message} (API: ${apiUrl})`); // Show error to user with API URL
+                    setError(`SSO Login Failed: ${e.message}`); // Show error to user
                     setShowLogin(true);
                 }
 
@@ -224,7 +223,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,
@@ -489,34 +488,9 @@ const Login = () => {
                         {droppedFile ? "Connect Securely (SSO)" : "Connect Securely"}
                     </Button>
 
-                </div>
-
-                {/* Diagnostic Footer */}
-                <div className="mt-8 text-center space-y-2">
-                    <p className="text-xs text-slate-600 font-mono">
-                        v2.1 | API: {import.meta.env.VITE_API_BASE_URL || 'Using Fallback'}
-                    </p>
-                    <button
-                        onClick={async () => {
-                            try {
-                                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
-                                setError('Pinging...');
-                                const res = await axios.get(`${apiUrl}/api/ion-libraries?tenantUrl=test&token=test`).catch(e => e.response || e);
-                                // We expect 400 or 401, but a response means network is OK
-                                if (res.status < 500 || res.message) {
-                                    setError(`Ping Result: ${res.status || res.message} (Reachable)`);
-                                } else {
-                                    setError(`Ping Failed: ${res.message}`);
-                                }
-                            } catch (e) {
-                                setError(`Ping Network Error: ${e.message}`);
-                            }
-                        }}
-                        className="text-xs text-slate-500 hover:text-white underline"
-                    >
-                        Test Connectivity
-                    </button>
-                    <p className="text-xs text-slate-500 font-medium">Protected by Enterprise Grade Security</p>
+                    <div className="text-center">
+                        <p className="text-xs text-slate-500 font-medium">Protected by Enterprise Grade Security</p>
+                    </div>
                 </div>
             </motion.div>
         </div>
