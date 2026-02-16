@@ -59,6 +59,24 @@ IDDP_EXPORT_IMPORT =1`
 https://mingle-portal.inforcloudsuite.com/${tenantName}/
 Please set RPA_EXCEPTION_UI=2. 
 Product : Mingle`
+            },
+            'Velocity-suite components': {
+                summary: `${tenantName} - Customer Provisioning Velocity Suite`,
+                description: `Hi Team,
+
+Kindly enable the Velocity Suite Components on this customer’s tenants? They have purchased the Velocity Suite
+
+${tenantName}
+
+Can you provision
+
+• RPA (ION-S-RPA)
+
+• IDP (ION-S-IDP)
+
+• GenAI (ION-S-GENAI-T1)
+
+• BaaS (Backend as a Service) (ION-S-BAAS)`
             }
         },
         'COLDEVSUP': {
@@ -76,6 +94,14 @@ Dataset Name : [INSERT_NAME]`
                 summary: `DEVMRKT_DEV: Quest is failing after deploying`,
                 description: `These quests are failing in ${tenantName} tenant
 Quest Name : [INSERT_NAME]`
+            }
+        },
+        'SAASCLOUD': {
+            'Provision Infor AI': {
+                summary: `${tenantName}- Provision Infor AI in this tenant.`,
+                description: `${tenantName}
+Hi Team,
+Could you please provision Infor AI (COLEMANAI) in this tenant.`
             }
         }
     };
