@@ -43,66 +43,83 @@ const Login = () => {
             }
 
             if (hasCode) {
-                // User authorized — redirect to backend exchange endpoint
+                // User authorized
                 try {
+                    // Restore config from session storage
                     const storedConfig = sessionStorage.getItem('ion_config');
                     const storedLoginType = sessionStorage.getItem('login_type') || 'PMO';
 
                     if (storedConfig) {
                         const config = JSON.parse(storedConfig);
+                        // Construct Token Endpoint: pu + ot
+                        // Ensure pu ends with slash or ot starts with one if needed, but usually pu has trailing slash
                         const tokenEndpoint = config.pu + config.ot;
-                        const redirectUri = config.ru || window.location.origin;
 
-                        // Redirect browser to backend exchange (GET, works through static site rewrite)
-                        const exchangeUrl = `/api/auth/exchange?` +
-                            `code=${encodeURIComponent(hasCode)}` +
-                            `&ci=${encodeURIComponent(config.ci)}` +
-                            `&cs=${encodeURIComponent(config.cs)}` +
-                            `&ru=${encodeURIComponent(redirectUri)}` +
-                            `&tu=${encodeURIComponent(tokenEndpoint)}` +
-                            `&iu=${encodeURIComponent(config.iu || '')}` +
-                            `&ti=${encodeURIComponent(config.ti || '')}`;
+                        // Exchange Code for Token via Backend
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                        console.log("Exchanging code for token...");
 
-                        console.log("Redirecting to backend exchange...");
-                        window.location.href = exchangeUrl;
-                        return; // Stop execution — page will redirect
+                        const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
+                            clientId: config.ci,
+                            clientSecret: config.cs,
+                            code: hasCode,
+                            redirectUri: config.ru || window.location.origin,
+                            tokenUrl: tokenEndpoint
+                        });
+
+                        const { access_token } = tokenRes.data;
+
+                        if (!access_token) {
+                            throw new Error("No access token returned");
+                        }
+
+                        // Construct proper Tenant URL: https://mingle-ionapi.inforcloudsuite.com/{TenantName}/
+                        // "iu" is the base ionapi url, "ti" is the tenant id
+                        const tenantUrl = `${config.iu}/${config.ti}/`;
+
+                        // Fetch Real User Details
+                        let userData = {
+                            response: {
+                                userlist: [{ DisplayName: 'Infor User', Email: 'user@example.com' }]
+                            }
+                        };
+
+                        try {
+                            const userRes = await axios.post(`${apiUrl}/api/proxy`, {
+                                tenantUrl: tenantUrl,
+                                endpoint: 'ifsservice/usermgt/v2/users/me',
+                                token: access_token,
+                                method: 'GET'
+                            });
+
+                            if (userRes.status === 200 && userRes.data) {
+                                if (userRes.data.response && userRes.data.response.userlist) {
+                                    userData = userRes.data;
+                                } else {
+                                    userData = {
+                                        response: {
+                                            userlist: [userRes.data]
+                                        }
+                                    };
+                                }
+                            }
+                        } catch (err) {
+                            console.warn("Failed to fetch user details, using fallback", err);
+                        }
+
+                        login(tenantUrl, access_token, userData, storedLoginType);
+                        navigate('/prerequisites');
                     } else {
+                        // If no config found (unexpected), show login
                         setShowLogin(true);
                     }
                 } catch (e) {
                     console.error("SSO Handle Error", e);
-                    setError(`SSO Login Failed: ${e.message}`);
+                    setError(`SSO Login Failed: ${e.message}`); // Show error to user
                     setShowLogin(true);
                 }
 
-                window.history.replaceState({}, document.title, window.location.pathname);
-            } else if (params.get('sso_data')) {
-                // Backend redirected back with SSO data
-                try {
-                    const ssoData = JSON.parse(atob(decodeURIComponent(params.get('sso_data'))));
-                    const storedLoginType = sessionStorage.getItem('login_type') || 'PMO';
-
-                    console.log("SSO data received from backend");
-
-                    if (!ssoData.access_token) {
-                        throw new Error("No access token in SSO data");
-                    }
-
-                    login(ssoData.tenantUrl, ssoData.access_token, ssoData.userData, storedLoginType);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    navigate('/prerequisites');
-                } catch (e) {
-                    console.error("SSO Data Parse Error", e);
-                    setError(`SSO Login Failed: ${e.message}`);
-                    setShowLogin(true);
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                }
-            } else if (params.get('sso_error')) {
-                // Backend returned an error
-                const errorMsg = decodeURIComponent(params.get('sso_error'));
-                console.error("SSO Error from backend:", errorMsg);
-                setError(`SSO Login Failed: ${errorMsg}`);
-                setShowLogin(true);
+                // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
             } else {
                 // Not authorized yet
