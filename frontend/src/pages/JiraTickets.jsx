@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Ticket, Send, AlertCircle, CheckCircle } from 'lucide-react';
@@ -15,114 +15,6 @@ const JiraTickets = () => {
     });
     const [creatingJira, setCreatingJira] = useState(false);
     const [jiraResult, setJiraResult] = useState(null);
-    const [selectedTemplate, setSelectedTemplate] = useState('');
-
-    const tenantName = user?.tenantUrl
-        ? new URL(user.tenantUrl).pathname.split('/').filter(Boolean).pop()
-        : 'Unknown-Tenant';
-
-    const TEMPLATES = {
-        'MTMS': {
-            'GenAI-Passthrough': {
-                summary: `Request to provision Gen AI and GENAI passthrough in ${tenantName} (from dashboard) tenant`,
-                description: `Requesting the enablement of feature flags from multiple applications and provisioning of the GenAI in the listed tenant below:
-
-${tenantName}:
-
-https://mingle-portal.inforcloudsuite.com/${tenantName}/ 
-
-GenAI: (Embedded Experience) - application provisioning with the following feature flags enabled:
-
-PROMPTPLAYGROUND
-
-PASSTHROUGH
-
-See the provisioning recipe for details: 
-Embedded Experience Provisioning Recipe - GenAI
-https://infor.atlassian.net/wiki/spaces/CS/pages/1009329168/Embedded+Experience+Provisioning+Recipe+-+GenAI`
-            },
-            'IDP-Import&export': {
-                summary: `Feature Enablement for IDP Import Export toggle in ${tenantName} tenant`,
-                description: `Requesting the feature enablement of Infor Document Processor, IDP - Import & Export option in the listed tenants below:
-
-${tenantName}
-
-https://mingle-portal.inforcloudsuite.com/${tenantName}/ 
-
-Please enable the toggle to Import Export documents in IDP.
-
-IDDP_EXPORT_IMPORT =1`
-            },
-            'Review Center': {
-                summary: `Enable new Review Center for ${tenantName} Tenant.`,
-                description: `Please enable new review center in ${tenantName} Tenant.
-https://mingle-portal.inforcloudsuite.com/${tenantName}/
-Please set RPA_EXCEPTION_UI=2. 
-Product : Mingle`
-            },
-            'Velocity-suite components': {
-                summary: `${tenantName} - Customer Provisioning Velocity Suite`,
-                description: `Hi Team,
-
-Kindly enable the Velocity Suite Components on this customer’s tenants? They have purchased the Velocity Suite
-
-${tenantName}
-
-Can you provision
-
-• RPA (ION-S-RPA)
-
-• IDP (ION-S-IDP)
-
-• GenAI (ION-S-GENAI-T1)
-
-• BaaS (Backend as a Service) (ION-S-BAAS)`
-            }
-        },
-        'COLDEVSUP': {
-            'Custom algorithm': {
-                summary: `DEVMRKT_DEV: Custom algorithm is failing after deploying`,
-                description: `These custom algorithms are failing in ${tenantName} tenant
-Custom Algorithm Name : [INSERT_NAME]`
-            },
-            'Dataset': {
-                summary: `DEVMRKT_DEV: Dataset is failing after deploying`,
-                description: `These datasets are failing in ${tenantName} tenant
-Dataset Name : [INSERT_NAME]`
-            },
-            'Quest': {
-                summary: `DEVMRKT_DEV: Quest is failing after deploying`,
-                description: `These quests are failing in ${tenantName} tenant
-Quest Name : [INSERT_NAME]`
-            }
-        },
-        'SAASCLOUD': {
-            'Provision Infor AI': {
-                summary: `${tenantName}- Provision Infor AI in this tenant.`,
-                description: `${tenantName}
-Hi Team,
-Could you please provision Infor AI (COLEMANAI) in this tenant.`
-            }
-        }
-    };
-
-    // Get current available templates based on project
-    const availableTemplates = TEMPLATES[jiraForm.projectKey] || {};
-
-    useEffect(() => {
-        // Reset template when project changes
-        setSelectedTemplate('');
-    }, [jiraForm.projectKey]);
-
-    useEffect(() => {
-        if (selectedTemplate && availableTemplates[selectedTemplate]) {
-            setJiraForm(prev => ({
-                ...prev,
-                summary: availableTemplates[selectedTemplate].summary,
-                description: availableTemplates[selectedTemplate].description
-            }));
-        }
-    }, [selectedTemplate, jiraForm.projectKey]); // Depend on projectKey to ensure correct template lookup fallback
 
     const handleJiraSubmit = async (e) => {
         e.preventDefault();
@@ -210,26 +102,6 @@ Could you please provision Infor AI (COLEMANAI) in this tenant.`
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                                 </div>
                             </div>
-
-                            {/* Template Dropdown - Conditional based on available templates */}
-                            {Object.keys(availableTemplates).length > 0 && (
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Template</label>
-                                    <div className="relative">
-                                        <select
-                                            value={selectedTemplate}
-                                            onChange={e => setSelectedTemplate(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-infor-red/50 appearance-none transition-all hover:bg-black/50 cursor-pointer"
-                                        >
-                                            <option value="">Select Template...</option>
-                                            {Object.keys(availableTemplates).map(tmpl => (
-                                                <option key={tmpl} value={tmpl}>{tmpl}</option>
-                                            ))}
-                                        </select>
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
                         <div>

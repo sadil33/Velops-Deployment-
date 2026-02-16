@@ -6,43 +6,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Request Logger Middleware (Top Priority)
-app.use((req, res, next) => {
-  console.log(`[Request] ${req.method} ${req.url}`);
-  console.log('[Headers]', JSON.stringify(req.headers));
-  next();
-});
-
 // Enable CORS for all routes (configured for development flexibility)
 // In production, you would restrict this to your frontend domain.
-app.use(cors({
-  origin: [
-    'https://velops-frontend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:4173'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-infor-logicalidprefix']
-}));
-
-// Process Crash Handlers
-process.on('uncaughtException', (err) => {
-  console.error('[CRITICAL] Uncaught Exception:', err);
-  console.error(err.stack);
-  // Keep process alive for a moment to flush logs if possible, but usually best to exit.
-  // For debugging connection closed, we want to see this log.
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
+app.use(cors());
 app.use(express.json());
-
-// Root Route for Health Check
-app.get('/', (req, res) => {
-  res.send('Backend is running');
-});
 
 // CSP GenAI Check Endpoint
 app.post('/api/csp/genai/check', async (req, res) => {
@@ -232,7 +199,6 @@ app.post('/api/auth/token', async (req, res) => {
   const { clientId, clientSecret, code, redirectUri, tokenUrl } = req.body;
 
   if (!clientId || !clientSecret || !code || !redirectUri || !tokenUrl) {
-    console.error('[Auth] Missing required parameters:', { clientId: !!clientId, clientSecret: !!clientSecret, code: !!code, redirectUri: !!redirectUri, tokenUrl: !!tokenUrl });
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
@@ -256,8 +222,6 @@ app.post('/api/auth/token', async (req, res) => {
     });
 
     console.log('[Auth] Token exchange successful');
-    console.log('[Auth] Response keys:', Object.keys(response.data));
-    console.log('[Auth] Response data:', JSON.stringify(response.data).substring(0, 500));
     res.json(response.data);
 
   } catch (error) {
@@ -1952,15 +1916,7 @@ const keepAlive = () => {
   }
 };
 
-console.log('Starting server...');
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error('[Global Error Handler]', err.stack);
-  res.status(500).json({ error: 'Internal Server Error', message: err.message });
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend proxy server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`Backend proxy server running on http://localhost:${PORT}`);
   keepAlive();
 });

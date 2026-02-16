@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain, Sparkles, Cloud, Layers, UploadCloud } from 'lucide-react';
+import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain } from 'lucide-react';
 
 // Security Roles Component
 const container = {
@@ -277,8 +276,8 @@ export const CSPTools = ({ className, compact }) => {
 
         return (
             <div className={`${compact ? 'p-3 rounded-xl border' : 'p-6 rounded-2xl border'} backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group ${status.provisioned
-                ? `bg-slate-900/60 ${colors.border} shadow-lg ${colors.glow} hover:${colors.border}`
-                : 'bg-white/5 border-white/10 hover:border-white/20'
+                    ? `bg-slate-900/60 ${colors.border} shadow-lg ${colors.glow} hover:${colors.border}`
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
                 }`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className={`transition-all duration-300 ${compact ? 'p-2 rounded-lg' : 'p-3 rounded-xl'} ${status.provisioned ? `${colors.bg}/20 text-white` : 'bg-white/5 text-slate-400 group-hover:bg-white/10'
@@ -288,7 +287,7 @@ export const CSPTools = ({ className, compact }) => {
                     {status.loading ? (
                         <Loader2 className={`${compact ? 'w-3 h-3' : 'w-5 h-5'} text-slate-400 animate-spin`} />
                     ) : status.provisioned ? (
-                        <div className={`${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5`}>
+                        <div className={`${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} ${colors.bg}/10 border ${colors.border} rounded-lg ${colors.text} font-bold uppercase tracking-wider flex items-center gap-1.5`}>
                             {compact ? 'Active' : 'Provisioned'}
                             <CheckCircle2 className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
                         </div>
@@ -331,77 +330,23 @@ export const CSPTools = ({ className, compact }) => {
             className={className || "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"}
         >
             <CSPCard title="IFS-Services" description="Core services check via" code="ifsservice" status={ifsStatus} Icon={Shield} />
-            <CSPCard title="Gen-AI Services" description="Generative capabilities via" code="chatsvc" status={status} Icon={Sparkles} />
-            <CSPCard title="Ion-Services" description="Messaging service via" code="IONSERVICES" status={ionStatus} Icon={Cloud} />
-            <CSPCard title="Data-Fabric" description="Data Lake services via" code="DATAFABRIC" status={dataFabricStatus} Icon={Layers} />
+            <CSPCard title="Gen-AI Services" description="Generative capabilities via" code="chatsvc" status={status} Icon={Bot} />
+            <CSPCard title="Ion-Services" description="Messaging service via" code="IONSERVICES" status={ionStatus} Icon={Zap} />
+            <CSPCard title="Data-Fabric" description="Data Lake services via" code="DATAFABRIC" status={dataFabricStatus} Icon={Database} />
             <CSPCard title="Infor-AI" description="Coleman AI models via" code="COLEMANAI" status={inforAiStatus} Icon={Brain} />
             <CSPCard title="Review-Center" description="RPA Review Center via" code="RPA/actuatorsvc" status={reviewCenterStatus} Icon={FileText} />
-            <CSPCard title="RPA-Management" description="RPA Process Services via" code="RPA/api" status={rpaManagementStatus} Icon={Bot} />
+            <CSPCard title="RPA-Management" description="RPA Process Services via" code="RPA/api" status={rpaManagementStatus} Icon={Wrench} />
         </motion.div>
     );
 };
 
 const SecurityRoles = () => {
-    const { user } = useAuth();
-    // Initialize requirements from localStorage (shared with Prerequisites) or fallback to empty
-    const [requirements, setRequirements] = useState(() => {
-        const saved = localStorage.getItem('infor_extracted_roles');
-        return saved ? JSON.parse(saved) : [];
-    });
-
+    const { user, requirements } = useAuth(); // requirements from file upload
     const [activeTab, setActiveTab] = useState('roles');
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-
-    // File Upload State
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
-
-    const onDrop = useCallback(async (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (!file) return;
-
-        setUploading(true);
-        setUploadError(null);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-            const res = await axios.post(`${apiUrl}/api/parse`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            const roles = res.data.roles || [];
-            if (roles.length === 0) {
-                setUploadError("No roles found in file.");
-            } else {
-                setRequirements(roles);
-                localStorage.setItem('infor_extracted_roles', JSON.stringify(roles));
-            }
-        } catch (err) {
-            console.error("Upload Error:", err);
-            setUploadError(err.response?.data?.error || "Failed to parse file.");
-        } finally {
-            setUploading(false);
-        }
-    }, []);
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'application/pdf': ['.pdf'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'text/plain': ['.txt'],
-            'image/png': ['.png'],
-            'image/jpeg': ['.jpg', '.jpeg']
-        },
-        maxFiles: 1,
-        disabled: uploading
-    });
 
     const fetchRoles = async () => {
         try {
@@ -461,37 +406,6 @@ const SecurityRoles = () => {
             animate="show"
             className="space-y-8"
         >
-            {/* File Drop Zone - Compact */}
-            <div className="glass-panel rounded-2xl p-4 border border-white/10 bg-white/5 relative overflow-hidden group hover:border-infor-red/30 transition-all duration-300">
-                <div {...getRootProps()} className="cursor-pointer flex items-center justify-between gap-4">
-                    <input {...getInputProps()} />
-                    <div className="flex items-center gap-4 flex-1">
-                        <div className={`p-3 rounded-xl transition-all ${isDragActive ? 'bg-infor-red text-white' : 'bg-white/5 text-slate-400 group-hover:text-infor-red group-hover:bg-infor-red/10'}`}>
-                            {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <UploadCloud className="w-6 h-6" />}
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-white group-hover:text-infor-red transition-colors">
-                                {uploading ? 'Analyzing Document...' : isDragActive ? 'Drop file to extract roles' : 'Update Requirements'}
-                            </h3>
-                            <p className="text-xs text-slate-400">
-                                {uploading ? 'Extracting security roles via AI...' : 'Drag & drop or click to upload new requirements file'}
-                            </p>
-                        </div>
-                    </div>
-                    {uploadError && (
-                        <div className="text-xs text-red-400 font-bold bg-red-500/10 px-3 py-1 rounded border border-red-500/20 flex items-center gap-2">
-                            <XCircle className="w-3 h-3" /> {uploadError}
-                        </div>
-                    )}
-                </div>
-                {/* Visual Progress Bar if uploading */}
-                {uploading && (
-                    <div className="absolute bottom-0 left-0 h-1 bg-infor-red/50 w-full overflow-hidden">
-                        <div className="h-full bg-infor-red animate-progress w-full origin-left"></div>
-                    </div>
-                )}
-            </div>
-
             {/* Tabs Header */}
             <div className="flex items-center gap-4 mb-6">
                 <button

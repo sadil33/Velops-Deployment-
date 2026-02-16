@@ -53,7 +53,8 @@ export const AuthProvider = ({ children }) => {
             const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
             const tenantId = tenantUrl ? new URL(tenantUrl).pathname.split('/').filter(Boolean).pop() : 'Unknown';
 
-            await axios.post(`/api/users/activity`, {
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            await axios.post(`${apiUrl}/api/users/activity`, {
                 username,
                 displayName,
                 email,
