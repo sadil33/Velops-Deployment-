@@ -1930,13 +1930,15 @@ const keepAlive = () => {
   }
 };
 
+console.log('Starting server...');
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('[Global Error Handler]', err.stack);
   res.status(500).json({ error: 'Internal Server Error', message: err.message });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend proxy server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Backend proxy server running on http://0.0.0.0:${PORT}`);
   keepAlive();
 });
