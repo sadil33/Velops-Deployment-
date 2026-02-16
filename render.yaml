@@ -11,7 +11,6 @@ services:
         value: 5000
       - key: NODE_ENV
         value: production
-
     autoDeploy: true
 
   # Frontend Service
@@ -21,7 +20,12 @@ services:
     plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
-
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: velops-backend
+          property: url
     routes:
       - type: rewrite
         source: /*

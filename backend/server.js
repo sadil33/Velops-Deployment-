@@ -8,15 +8,7 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS for all routes (configured for development flexibility)
 // In production, you would restrict this to your frontend domain.
-app.use(cors({
-  origin: [
-    'https://velops-frontend.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:5000'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-infor-logicalidprefix']
-}));
+app.use(cors());
 app.use(express.json());
 
 // CSP GenAI Check Endpoint

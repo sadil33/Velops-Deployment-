@@ -57,9 +57,6 @@ const Login = () => {
 
                         // Exchange Code for Token via Backend
                         const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                        console.log("---------------------------------------------------------");
-                        console.log("DEBUG: Using API URL:", apiUrl);
-                        console.log("---------------------------------------------------------");
                         console.log("Exchanging code for token...");
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
