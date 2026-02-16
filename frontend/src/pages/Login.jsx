@@ -55,34 +55,15 @@ const Login = () => {
                         // Ensure pu ends with slash or ot starts with one if needed, but usually pu has trailing slash
                         const tokenEndpoint = config.pu + config.ot;
 
-                        // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+                        // Exchange Code for Token via Backend (uses relative URL, proxied through frontend)
                         console.log("Exchanging code for token...");
 
-                        // --- DEBUG: LOG REQUEST DETAILS ---
-                        console.log("--------------------------------");
-                        console.log("DEBUG: SSO Token Request");
-                        console.log("Target URL:", `${apiUrl}/api/auth/token`);
-                        console.log("Payload:", {
+                        const tokenRes = await axios.post(`/api/auth/token`, {
                             clientId: config.ci,
-                            clientSecret: "(Hidden)",
+                            clientSecret: config.cs,
                             code: hasCode,
                             redirectUri: config.ru || window.location.origin,
                             tokenUrl: tokenEndpoint
-                        });
-                        console.log("--------------------------------");
-                        // ----------------------------------
-
-                        // DEBUG: CHANGED TO GET to test connectivity
-                        // Note: GET requests send data in params, not body.
-                        const tokenRes = await axios.get(`${apiUrl}/api/auth/token`, {
-                            params: {
-                                clientId: config.ci,
-                                clientSecret: config.cs,
-                                code: hasCode,
-                                redirectUri: config.ru || window.location.origin,
-                                tokenUrl: tokenEndpoint
-                            }
                         });
 
                         const { access_token } = tokenRes.data;
@@ -103,7 +84,7 @@ const Login = () => {
                         };
 
                         try {
-                            const userRes = await axios.post(`${apiUrl}/api/proxy`, {
+                            const userRes = await axios.post(`/api/proxy`, {
                                 tenantUrl: tenantUrl,
                                 endpoint: 'ifsservice/usermgt/v2/users/me',
                                 token: access_token,
@@ -242,8 +223,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
-            const res = await axios.post(`${apiUrl}/api/proxy`, {
+            const res = await axios.post(`/api/proxy`, {
                 tenantUrl,
                 endpoint,
                 token,
