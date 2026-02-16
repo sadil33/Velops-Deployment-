@@ -56,7 +56,7 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
                         console.log("Exchanging code for token...");
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
@@ -224,7 +224,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,
@@ -494,12 +494,12 @@ const Login = () => {
                 {/* Diagnostic Footer */}
                 <div className="mt-8 text-center space-y-2">
                     <p className="text-xs text-slate-600 font-mono">
-                        Backend API: {import.meta.env.VITE_API_BASE_URL || 'Localhost (Default)'}
+                        v2.1 | API: {import.meta.env.VITE_API_BASE_URL || 'Using Fallback'}
                     </p>
                     <button
                         onClick={async () => {
                             try {
-                                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
                                 setError('Pinging...');
                                 const res = await axios.get(`${apiUrl}/api/ion-libraries?tenantUrl=test&token=test`).catch(e => e.response || e);
                                 // We expect 400 or 401, but a response means network is OK
