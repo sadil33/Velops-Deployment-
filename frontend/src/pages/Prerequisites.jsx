@@ -31,7 +31,7 @@ const Prerequisites = () => {
 
         try {
             // Call our Backend Parsing Endpoint
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL ?? '';
             const res = await axios.post(`${apiUrl}/api/parse`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',

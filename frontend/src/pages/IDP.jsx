@@ -101,7 +101,7 @@ const ImportDPFTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idp/import-dpf`,
+                            `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/idp/import-dpf`,
                             formData,
                             {
                                 headers: {

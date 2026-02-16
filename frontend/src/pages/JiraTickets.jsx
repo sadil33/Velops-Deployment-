@@ -22,7 +22,7 @@ const JiraTickets = () => {
         setJiraResult(null);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL ?? '';
             const response = await axios.post(`${apiUrl}/api/jira/tickets`, jiraForm);
             setJiraResult(response.data);
             setJiraForm({ summary: '', description: '', priority: 'Major', issuetype: 'Task', projectKey: 'MTMS' });

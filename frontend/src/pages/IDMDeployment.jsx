@@ -97,7 +97,7 @@ const ImportConfigTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idm-config-import`,
+                            `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/idm-config-import`,
                             formData,
                             {
                                 headers: {
@@ -323,7 +323,7 @@ const DeployItemTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idm-deploy`,
+                            `${import.meta.env.VITE_API_BASE_URL ?? ''}/api/idm-deploy`,
                             formData,
                             {
                                 headers: {
