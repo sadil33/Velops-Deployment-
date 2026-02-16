@@ -8,8 +8,21 @@ const PORT = process.env.PORT || 5000;
 
 // Enable CORS for all routes (configured for development flexibility)
 // In production, you would restrict this to your frontend domain.
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://velops-frontend.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:4173'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-infor-logicalidprefix']
+}));
 app.use(express.json());
+
+// Root Route for Health Check
+app.get('/', (req, res) => {
+  res.send('Backend is running');
+});
 
 // CSP GenAI Check Endpoint
 app.post('/api/csp/genai/check', async (req, res) => {
@@ -199,6 +212,7 @@ app.post('/api/auth/token', async (req, res) => {
   const { clientId, clientSecret, code, redirectUri, tokenUrl } = req.body;
 
   if (!clientId || !clientSecret || !code || !redirectUri || !tokenUrl) {
+    console.error('[Auth] Missing required parameters:', { clientId: !!clientId, clientSecret: !!clientSecret, code: !!code, redirectUri: !!redirectUri, tokenUrl: !!tokenUrl });
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
@@ -1915,6 +1929,12 @@ const keepAlive = () => {
     }, 14 * 60 * 1000); // 14 Minutes
   }
 };
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('[Global Error Handler]', err.stack);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
 
 app.listen(PORT, () => {
   console.log(`Backend proxy server running on http://localhost:${PORT}`);

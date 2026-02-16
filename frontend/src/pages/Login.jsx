@@ -139,12 +139,13 @@ const Login = () => {
             try {
                 const json = JSON.parse(event.target.result);
                 // Basic validation
-                if (json.ti && json.ci && json.pu && json.oa) {
+                if (json.ti && json.ci && json.pu && json.oa && json.ot) {
                     setParsedConfig(json);
                     setDroppedFile(file);
                     setError(null);
                 } else {
-                    setError("Invalid .ionapi file format. Missing required fields.");
+                    console.error("Invalid .ionapi file:", json);
+                    setError("Invalid .ionapi file format. Missing required fields (ti, ci, pu, oa, ot).");
                 }
             } catch (err) {
                 setError("Failed to parse the file. Please ensure it's a valid JSON.");
