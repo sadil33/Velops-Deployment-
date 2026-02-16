@@ -6,6 +6,13 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Request Logger Middleware (Top Priority)
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  console.log('[Headers]', JSON.stringify(req.headers));
+  next();
+});
+
 // Enable CORS for all routes (configured for development flexibility)
 // In production, you would restrict this to your frontend domain.
 app.use(cors({
@@ -17,12 +24,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-infor-logicalidprefix']
 }));
-// Request Logger Middleware
-app.use((req, res, next) => {
-  console.log(`[Request] ${req.method} ${req.url}`);
-  console.log('[Headers]', JSON.stringify(req.headers));
-  next();
-});
 
 // Process Crash Handlers
 process.on('uncaughtException', (err) => {
