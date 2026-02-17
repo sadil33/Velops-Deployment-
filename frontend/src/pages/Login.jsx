@@ -56,7 +56,7 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                         console.log("Exchanging code for token...");
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
@@ -223,7 +223,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,

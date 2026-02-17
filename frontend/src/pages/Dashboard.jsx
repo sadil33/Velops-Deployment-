@@ -83,7 +83,7 @@ const Dashboard = () => {
     React.useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
                 const response = await fetch(`${apiUrl}/api/users/activity`);
                 const data = await response.json();
                 if (data.users) {

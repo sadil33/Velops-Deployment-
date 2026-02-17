@@ -7,11 +7,13 @@ services:
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
     envVars:
+      - key: PORT
+        value: 5000
       - key: NODE_ENV
         value: production
     autoDeploy: true
 
-  # Frontend Service (Static Site)
+  # Frontend Service
   - type: static
     name: velops-frontend
     env: static
@@ -20,7 +22,10 @@ services:
     staticPublishPath: frontend/dist
     envVars:
       - key: VITE_API_BASE_URL
-        value: https://velops-backend.onrender.com
+        fromService:
+          type: web
+          name: velops-backend
+          property: url
     routes:
       - type: rewrite
         source: /*

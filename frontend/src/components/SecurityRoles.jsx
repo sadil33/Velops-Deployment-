@@ -54,7 +54,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/csp/genai/check`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/genai/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -75,7 +75,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkIonProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/csp/ion/check`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/ion/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -96,7 +96,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkDataFabricProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/csp/datafabric/check`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/datafabric/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -117,7 +117,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkInforAiProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/csp/inforai/check`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/inforai/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -139,7 +139,7 @@ export const CSPTools = ({ className, compact }) => {
             try {
                 // Using the proxy to check ifsservice availability via user check
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/proxy`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'ifsservice/usermgt/v2/users/me',
@@ -162,7 +162,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkReviewCenterProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/proxy`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'RPA/rpaactuatorsvc/api/v1/rpa/exception/usecasetypes?page=0&size=20',
@@ -185,7 +185,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkRpaManagementProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com'}/api/proxy`,
+                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'RPA/api/v1/rpa/process?environment=default',
@@ -351,7 +351,7 @@ const SecurityRoles = () => {
     const fetchRoles = async () => {
         try {
             setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl: user.tenantUrl,
                 endpoint: 'ifsservice/usermgt/v2/users/me',
