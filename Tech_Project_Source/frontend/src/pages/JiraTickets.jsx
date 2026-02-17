@@ -120,6 +120,7 @@ const JiraTickets = () => {
 
     const handleTemplateChange = (e) => {
         const templateKey = e.target.value;
+        console.log('Template selected:', templateKey);
         setSelectedTemplate(templateKey);
 
         if (templateKey && jiraForm.projectKey && TEMPLATES[jiraForm.projectKey] && TEMPLATES[jiraForm.projectKey][templateKey]) {
@@ -169,6 +170,9 @@ const JiraTickets = () => {
             setCreatingJira(false);
         }
     };
+
+    console.log('Current Project Key:', jiraForm.projectKey);
+    console.log('Available Templates for Project:', TEMPLATES[jiraForm.projectKey]);
 
     return (
         <motion.div
