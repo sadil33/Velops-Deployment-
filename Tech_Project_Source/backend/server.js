@@ -208,6 +208,7 @@ app.post('/api/auth/token', async (req, res) => {
 
   try {
     console.log(`[Auth] Exchanging code for token at: ${tokenUrl}`);
+    console.log(`[Auth] Using redirect_uri: ${redirectUri}`);
 
     // Basic Auth Header
     const authHeader = 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64');

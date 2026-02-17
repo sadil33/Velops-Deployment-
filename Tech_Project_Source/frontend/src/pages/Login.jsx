@@ -57,13 +57,15 @@ const Login = () => {
 
                         // Exchange Code for Token via Backend
                         const apiUrl = "http://localhost:5000";
+                        const redirectUri = config.ru || window.location.origin;
                         console.log("Exchanging code for token...and the url is", apiUrl);
+                        console.log("Using redirectUri:", redirectUri);
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
                             clientId: config.ci,
                             clientSecret: config.cs,
                             code: hasCode,
-                            redirectUri: config.ru || window.location.origin,
+                            redirectUri: redirectUri,
                             tokenUrl: tokenEndpoint
                         });
 
