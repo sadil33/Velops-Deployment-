@@ -56,8 +56,11 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = "http://localhost:5000";
-                        const redirectUri = config.ru || window.location.origin;
+                        const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+                        // Prefer localhost origin if we are on localhost, otherwise trust the config
+                        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                        const redirectUri = isLocalhost ? window.location.origin : (config.ru || window.location.origin);
+
                         console.log("Exchanging code for token...and the url is", apiUrl);
                         console.log("Using redirectUri:", redirectUri);
 
@@ -191,7 +194,9 @@ const Login = () => {
         const responseType = "code";
 
         // Use 'ru' from file if available, otherwise default to current origin
-        const redirectUri = ru || window.location.origin;
+        // BUT if we are on localhost, ALWAYS use window.location.origin to ensure it comes back to us
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const redirectUri = isLocalhost ? window.location.origin : (ru || window.location.origin);
 
         const authUrl = `${ssoBaseUrl}${authEndpoint}?client_id=${clientId}&response_type=${responseType}&redirect_uri=${redirectUri}`;
 
