@@ -4,6 +4,107 @@ import { motion } from 'framer-motion';
 import { Ticket, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+const TEMPLATES = {
+    'MTMS': {
+        'GenAI-Passthrough': {
+            summary: 'Request to provision Gen AI and GENAI passthrough in {tenant-name} tenant',
+            description: `Requesting the enablement of feature flags from multiple applications and provisioning of the GenAI in the listed tenant below:
+
+{tenant-name}:
+https://mingle-portal.inforcloudsuite.com/{tenant-name}
+
+GenAI: (Embedded Experience) - application provisioning with the following feature flags enabled:
+PROMPTPLAYGROUND
+PASSTHROUGH
+
+See the provisioning recipe for details:
+Embedded Experience Provisioning Recipe - https://infor.atlassian.net/wiki/spaces/CS/pages/1009329168/Embedded+Experience+Provisioning+Recipe+-+GenAI
+
+IDP (feature flag of mingle):
+IDDP = 1
+IDDP_SQLDB = 0
+IDDP_UI_PHASE1 = 1
+IDDP_UISVC = 1
+IDDP_UI_GenAI=1`
+        },
+        'Review Center': {
+            summary: 'Enable new Review Center for {tenant-name} Tenant',
+            description: `Please enable new review center in {tenant-name} Tenant.
+https://mingle-portal.inforcloudsuite.com/{tenant-name}
+Please set RPA_EXCEPTION_UI=2.
+Product : Mingle`
+        },
+        'IDM Import & Export': {
+            summary: 'Feature Enablement for IDP Import Export toggle in {tenant-name}',
+            description: `Requesting the feature enablement of Infor Document Processor, IDP - Import & Export option in the listed tenants below:
+
+{tenant-name}
+
+https://mingle-portal.inforcloudsuite.com/{tenant-name}
+
+Please enable the toggle to Import Export documents in IDP.
+
+IDDP_EXPORT_IMPORT =1
+
+IDDP_UI_GenAI = 1`
+        },
+        'Velocity-Suite Components': {
+            summary: '{tenant-name} - Customer Provisioning Velocity Suite',
+            description: `Hi Team,
+
+Kindly enable the Velocity Suite Components on this customer’s tenants? They have purchased the Velocity Suite
+
+{tenant-name}
+
+Can you provision:
+
+- RPA (ION-S-RPA)
+- IDP (ION-S-IDP)
+- GenAI (ION-S-GENAI-T1)
+- BaaS (Backend as a Service) (ION-S-BAAS)`
+        }
+    },
+    'COLDEVSUP': {
+        'Dataset': {
+            summary: '{tenant-name}: Dataset is failing after deploying',
+            description: `Dataset deployment is failing in {tenant-name} tenant
+
+Dataset Name : {user-input}
+
+Environment
+{tenant-name}
+https://mingle-portal.inforcloudsuite.com/{tenant-name}`
+        },
+        'Custom Algorithm': {
+            summary: '{tenant-name}: Custom Algorithm is failing after deploying',
+            description: `Custom Algorithm deployment is failing in {tenant-name} tenant
+
+Custom Algorithm Name : {user-input}
+
+Environment
+{tenant-name}
+https://mingle-portal.inforcloudsuite.com/{tenant-name}`
+        },
+        'Quest': {
+            summary: '{tenant-name}: Quest is failing after deploying',
+            description: `Quest deployment is failing in {tenant-name} tenant
+
+Quest Name : {user-input}
+
+Environment
+{tenant-name}
+https://mingle-portal.inforcloudsuite.com/{tenant-name}`
+        }
+    },
+    'SAASCLOUD': {
+        'Infor AI': {
+            summary: '{tenant-name} - Provision Infor AI in {tenant-name} tenant',
+            description: `Could you please provision Infor AI (COLEMANAI) in the following tenant:
+https://mingle-portal.inforcloudsuite.com/{tenant-name}`
+        }
+    }
+};
+
 const JiraTickets = () => {
     const { user } = useAuth();
     const [jiraForm, setJiraForm] = useState({
@@ -13,8 +114,44 @@ const JiraTickets = () => {
         issuetype: 'Task',
         projectKey: 'MTMS'
     });
+    const [selectedTemplate, setSelectedTemplate] = useState('');
     const [creatingJira, setCreatingJira] = useState(false);
     const [jiraResult, setJiraResult] = useState(null);
+
+    const handleTemplateChange = (e) => {
+        const templateKey = e.target.value;
+        console.log('Template selected:', templateKey);
+        setSelectedTemplate(templateKey);
+
+        if (templateKey && jiraForm.projectKey && TEMPLATES[jiraForm.projectKey] && TEMPLATES[jiraForm.projectKey][templateKey]) {
+            const template = TEMPLATES[jiraForm.projectKey][templateKey];
+            let tenantName = 'Unknown-Tenant';
+
+            // Try to extract tenant name from URL
+            if (user?.tenantUrl) {
+                try {
+                    const url = new URL(user.tenantUrl);
+                    // Usually path is something like /TENANT_NAME or just from hostname parts
+                    // For mingle-portal, it might be the last part of path
+                    const pathParts = url.pathname.split('/').filter(Boolean);
+                    if (pathParts.length > 0) {
+                        tenantName = pathParts[pathParts.length - 1];
+                    }
+                } catch (err) {
+                    console.error("Failed to parse tenant URL", err);
+                }
+            }
+
+            const filledSummary = template.summary.replace(/{tenant-name}/g, tenantName);
+            const filledDescription = template.description.replace(/{tenant-name}/g, tenantName);
+
+            setJiraForm(prev => ({
+                ...prev,
+                summary: filledSummary,
+                description: filledDescription
+            }));
+        }
+    };
 
     const handleJiraSubmit = async (e) => {
         e.preventDefault();
@@ -33,6 +170,9 @@ const JiraTickets = () => {
             setCreatingJira(false);
         }
     };
+
+    console.log('Current Project Key:', jiraForm.projectKey);
+    console.log('Available Templates for Project:', TEMPLATES[jiraForm.projectKey]);
 
     return (
         <motion.div
@@ -102,6 +242,29 @@ const JiraTickets = () => {
                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
                                 </div>
                             </div>
+
+                            {/* Template Dropdown - Dynamic based on Project Key */}
+                            {TEMPLATES[jiraForm.projectKey] && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-infor-red animate-pulse" />
+                                        Load Template
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedTemplate}
+                                            onChange={handleTemplateChange}
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-infor-red/50 appearance-none transition-all hover:bg-black/50 cursor-pointer"
+                                        >
+                                            <option value="">-- Select a Template --</option>
+                                            {Object.keys(TEMPLATES[jiraForm.projectKey]).map(key => (
+                                                <option key={key} value={key}>{key}</option>
+                                            ))}
+                                        </select>
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">▼</div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div>

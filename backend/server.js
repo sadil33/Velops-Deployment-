@@ -1,10 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const path = require('path'); // Added for file serving
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Serve Static Frontend Files
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Enable CORS for all routes (configured for development flexibility)
 // In production, you would restrict this to your frontend domain.
@@ -204,6 +208,7 @@ app.post('/api/auth/token', async (req, res) => {
 
   try {
     console.log(`[Auth] Exchanging code for token at: ${tokenUrl}`);
+    console.log(`[Auth] Using redirect_uri: ${redirectUri}`);
 
     // Basic Auth Header
     const authHeader = 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64');

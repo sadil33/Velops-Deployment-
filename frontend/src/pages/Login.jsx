@@ -56,14 +56,16 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-                        console.log("Exchanging code for token...");
+                        const apiUrl = "http://localhost:5000";
+                        const redirectUri = config.ru || window.location.origin;
+                        console.log("Exchanging code for token...and the url is", apiUrl);
+                        console.log("Using redirectUri:", redirectUri);
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
                             clientId: config.ci,
                             clientSecret: config.cs,
                             code: hasCode,
-                            redirectUri: config.ru || window.location.origin,
+                            redirectUri: redirectUri,
                             tokenUrl: tokenEndpoint
                         });
 
@@ -223,7 +225,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,

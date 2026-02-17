@@ -70,7 +70,7 @@ const ChatWithDocument = () => {
                 <div>
                     <h2 className="text-3xl font-black text-white flex items-center gap-3">
                         <FileText className="w-8 h-8 text-infor-red" />
-                        Chat with Document
+                        Chat Assistant
                     </h2>
                     <p className="text-slate-400">Ask questions based on your uploaded requirements.</p>
                 </div>
