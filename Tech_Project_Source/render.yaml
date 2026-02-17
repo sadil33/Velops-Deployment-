@@ -1,11 +1,10 @@
 services:
-  # Monolithic Service (Backend + Frontend)
+  # Backend Service
   - type: web
     name: velops-backend
     env: node
     plan: free
-    # Build frontend first, then backend
-    buildCommand: cd frontend && npm install && npm run build && cd ../backend && npm install
+    buildCommand: cd backend && npm install
     startCommand: cd backend && npm start
     envVars:
       - key: PORT
@@ -13,3 +12,21 @@ services:
       - key: NODE_ENV
         value: production
     autoDeploy: true
+
+  # Frontend Service
+  - type: static
+    name: velops-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: velops-backend
+          property: url
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
