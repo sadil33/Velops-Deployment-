@@ -1,5 +1,5 @@
 services:
-  # Backend Service
+  # Backend Service (Node)
   - type: web
     name: velops-backend
     env: node
@@ -13,9 +13,10 @@ services:
         value: 5000
     autoDeploy: true
 
-  # Frontend Service
-  - type: static
+  # Frontend Service (Static)
+  - type: web
     name: velops-frontend
+    env: static
     plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
@@ -29,3 +30,4 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+    autoDeploy: true
