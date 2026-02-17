@@ -31,3 +31,4 @@ services:
         source: /*
         destination: /index.html
     autoDeploy: true
+  

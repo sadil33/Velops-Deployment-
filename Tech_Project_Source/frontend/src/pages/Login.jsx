@@ -56,8 +56,8 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
-                        console.log("Exchanging code for token...");
+                        const apiUrl = "http://localhost:5000";
+                        console.log("Exchanging code for token...and the url is", apiUrl);
 
                         const tokenRes = await axios.post(`${apiUrl}/api/auth/token`, {
                             clientId: config.ci,
