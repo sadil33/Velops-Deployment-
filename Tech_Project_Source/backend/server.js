@@ -1924,14 +1924,3 @@ app.listen(PORT, () => {
   console.log(`Backend proxy server running on http://localhost:${PORT}`);
   keepAlive();
 });
- 
- / /   C a t c h - a l l   r o u t e   t o   s e r v e   t h e   f r o n t e n d   f o r   a n y   u n k n o w n   r o u t e s   ( S P A   s u p p o r t )  
- / /   T h i s   m u s t   b e   t h e   L A S T   r o u t e   d e f i n e d  
- a p p . g e t ( ' * ' ,   ( r e q ,   r e s )   = >   {  
-         r e s . s e n d F i l e ( p a t h . j o i n ( _ _ d i r n a m e ,   ' . . / f r o n t e n d / d i s t ' ,   ' i n d e x . h t m l ' ) ) ;  
- } ) ;  
-  
- a p p . l i s t e n ( P O R T ,   ( )   = >   {  
-         c o n s o l e . l o g ( ` S e r v e r   r u n n i n g   o n   p o r t   $ { P O R T } ` ) ;  
- } ) ;  
- 

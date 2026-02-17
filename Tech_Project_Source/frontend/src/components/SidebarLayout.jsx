@@ -89,7 +89,7 @@ const SidebarLayout = () => {
                             }`}
                     >
                         <MessageSquare className="w-5 h-5" />
-                        Chat with Document
+                        Chat Assistant
                     </NavLink>
 
                     {/* Jira Tickets - Visible to All */}

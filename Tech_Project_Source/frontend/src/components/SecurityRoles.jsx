@@ -1,8 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain } from 'lucide-react';
+import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain, UploadCloud } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 
 // Security Roles Component
 const container = {
@@ -276,8 +277,8 @@ export const CSPTools = ({ className, compact }) => {
 
         return (
             <div className={`${compact ? 'p-3 rounded-xl border' : 'p-6 rounded-2xl border'} backdrop-blur-md transition-all duration-300 hover:scale-[1.02] hover:shadow-xl group ${status.provisioned
-                    ? `bg-slate-900/60 ${colors.border} shadow-lg ${colors.glow} hover:${colors.border}`
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                ? `bg-slate-900/60 ${colors.border} shadow-lg ${colors.glow} hover:${colors.border}`
+                : 'bg-white/5 border-white/10 hover:border-white/20'
                 }`}>
                 <div className="flex items-center justify-between mb-3">
                     <div className={`transition-all duration-300 ${compact ? 'p-2 rounded-lg' : 'p-3 rounded-xl'} ${status.provisioned ? `${colors.bg}/20 text-white` : 'bg-white/5 text-slate-400 group-hover:bg-white/10'
@@ -287,7 +288,7 @@ export const CSPTools = ({ className, compact }) => {
                     {status.loading ? (
                         <Loader2 className={`${compact ? 'w-3 h-3' : 'w-5 h-5'} text-slate-400 animate-spin`} />
                     ) : status.provisioned ? (
-                        <div className={`${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} ${colors.bg}/10 border ${colors.border} rounded-lg ${colors.text} font-bold uppercase tracking-wider flex items-center gap-1.5`}>
+                        <div className={`${compact ? 'px-2 py-0.5 text-[10px]' : 'px-3 py-1 text-xs'} bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5`}>
                             {compact ? 'Active' : 'Provisioned'}
                             <CheckCircle2 className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
                         </div>
@@ -341,12 +342,73 @@ export const CSPTools = ({ className, compact }) => {
 };
 
 const SecurityRoles = () => {
-    const { user, requirements } = useAuth(); // requirements from file upload
+    const { user, requirements, setRequirements } = useAuth(); // requirements from file upload
     const [activeTab, setActiveTab] = useState('roles');
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [uploading, setUploading] = useState(false);
+
+    const onDrop = useCallback(async (acceptedFiles) => {
+        const file = acceptedFiles[0];
+        if (!file) return;
+
+        setUploading(true);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            // Call our Backend Parsing Endpoint
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const res = await axios.post(`${apiUrl}/api/parse`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const roles = res.data.roles || [];
+            console.log('Parsed Roles:', roles);
+
+            if (roles.length === 0) {
+                setError("No security roles were found in this document. Please check the file content.");
+            } else {
+                setRequirements(roles);
+                // Also update localStorage for persistence if AuthContext doesn't handle it
+                // AuthContext initializes from empty array usually, but let's trust it handles session or we handle it here if needed.
+                // Actually AuthContext doesn't seem to sync 'requirements' to localStorage in the code I saw, 
+                // but Prerequisites.jsx does manual localStorage.setItem('infor_extracted_roles', ...).
+                // Let's emulate that consistency.
+                localStorage.setItem('infor_extracted_roles', JSON.stringify(roles));
+            }
+
+        } catch (err) {
+            console.error(err);
+            // Check for specific GenAI failure
+            if (err.response?.data?.error === "Extraction failed in genai") {
+                setError("Extraction failed in genai");
+            } else {
+                const msg = err.response?.data?.error || "Failed to parse the file. Please try again.";
+                setError(msg);
+            }
+        } finally {
+            setUploading(false);
+        }
+    }, [setRequirements]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: {
+            'application/pdf': ['.pdf'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'text/plain': ['.txt'],
+            'image/png': ['.png'],
+            'image/jpeg': ['.jpg', '.jpeg']
+        },
+        maxFiles: 1
+    });
 
     const fetchRoles = async () => {
         try {
@@ -453,6 +515,44 @@ const SecurityRoles = () => {
                             </div>
                         ) : (
                             <>
+                                {/* SECTION 0: DROPZONE */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="glass-panel rounded-3xl p-4 shadow-xl bg-slate-900/50 border border-white/10 backdrop-blur-xl mb-6"
+                                >
+                                    <div
+                                        {...getRootProps()}
+                                        className={`
+                                            border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-300
+                                            flex flex-row items-center justify-center gap-4
+                                            ${isDragActive ? 'border-infor-red bg-red-500/10 scale-[1.01]' : 'border-white/10 bg-white/5 hover:border-infor-red/50 hover:bg-white/10'}
+                                            ${uploading ? 'opacity-50 pointer-events-none' : ''}
+                                        `}
+                                    >
+                                        <input {...getInputProps()} />
+
+                                        {uploading ? (
+                                            <>
+                                                <Loader2 className="w-5 h-5 text-infor-red animate-spin" />
+                                                <p className="font-bold text-infor-red text-sm">Analyzing...</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-8 h-8 bg-white/5 text-infor-red rounded-full flex items-center justify-center shadow-inner shrink-0">
+                                                    <UploadCloud className="w-4 h-4" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <p className="font-bold text-white text-sm">
+                                                        {isDragActive ? "Drop file now..." : "Drop requirements document here"}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400">PDF, DOCX, TXT - Updates Chat Context</p>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                </motion.div>
+
                                 {/* SECTION 1: REQUIREMENTS ANALYSIS */}
                                 {hasRequirements && (
                                     <motion.div
