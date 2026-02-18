@@ -4,6 +4,7 @@ import { FileSearch, Upload, File, XCircle, CheckCircle2, Loader2, Database, Lay
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../config';
 
 const IDP = () => {
     const [activeTab, setActiveTab] = useState('import-dpf');
@@ -101,7 +102,7 @@ const ImportDPFTab = () => {
                         formData.append('file', file);
 
                         await axios.post(
-                            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/idp/import-dpf`,
+                            `${API_BASE_URL}/api/idp/import-dpf`,
                             formData,
                             {
                                 headers: {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import { Send, Bot, User, Trash2, FileText, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -41,7 +42,7 @@ const ChatWithDocument = () => {
             // Get auth details from user context
             const { token, tenantUrl } = user || {};
 
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/chat`, {
+            const response = await axios.post(`${API_BASE_URL}/api/chat`, {
                 question: userMessage.content,
                 token,
                 tenantUrl

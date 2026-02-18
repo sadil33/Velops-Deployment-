@@ -6,6 +6,7 @@ import axios from 'axios';
 import JSZip from 'jszip';
 import { useAuth } from '../context/AuthContext';
 import FileDropInput from '../components/FileDropInput';
+import { API_BASE_URL } from '../config';
 
 const AITab = ({ active, onClick, icon: Icon, label }) => (
     <button
@@ -62,7 +63,7 @@ const DatasetsTab = () => {
                     formData.append('file', file);
 
                     await axios.post(
-                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/datasets/upload`,
+                        `${API_BASE_URL}/api/ai/datasets/upload`,
                         formData,
                         {
                             headers: { 'Content-Type': 'multipart/form-data' },
@@ -118,7 +119,7 @@ const DatasetsTab = () => {
         setLoadResults(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/datasets/load`,
+                `${API_BASE_URL}/api/ai/datasets/load`,
                 { datasetNames },
                 {
                     params: {
@@ -418,7 +419,7 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
                 const username = user?.userData?.response?.userlist?.[0]?.displayName || 'Unknown';
 
                 await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/quests`,
+                    `${API_BASE_URL}/api/ai/quests`,
                     formData,
                     {
                         headers: { 'Content-Type': 'multipart/form-data' },
@@ -477,7 +478,7 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
 
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/quests/train`,
+                `${API_BASE_URL}/api/ai/quests/train`,
                 { questNames: trainNames },
                 {
                     params: {
@@ -749,7 +750,7 @@ const OptimizationTab = () => {
                 const username = user?.userData?.response?.userlist?.[0]?.displayName || 'Unknown';
 
                 await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/optimization/quests`,
+                    `${API_BASE_URL}/api/ai/optimization/quests`,
                     formData,
                     {
                         headers: { 'Content-Type': 'multipart/form-data' },
@@ -892,7 +893,7 @@ const CustomAlgorithmTab = ({ setCreatedAlgorithms }) => {
         setDeployResults(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms/deploy`,
+                `${API_BASE_URL}/api/ai/custom-algorithms/deploy`,
                 { customAlgorithmNames: deployNames },
                 {
                     params: {
@@ -969,7 +970,7 @@ const CustomAlgorithmTab = ({ setCreatedAlgorithms }) => {
                         pythonVersion: pythonVersion
                     };
 
-                    const metaResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms`, metadataPayload, {
+                    const metaResponse = await axios.post(`${API_BASE_URL}/api/ai/custom-algorithms`, metadataPayload, {
                         params: {
                             tenantUrl: user.tenantUrl,
                             token: user.token,
@@ -991,7 +992,7 @@ const CustomAlgorithmTab = ({ setCreatedAlgorithms }) => {
                     const codeFormData = new FormData();
                     codeFormData.append('file', zipFile);
 
-                    await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms/upload-code`, codeFormData, {
+                    await axios.post(`${API_BASE_URL}/api/ai/custom-algorithms/upload-code`, codeFormData, {
                         headers: { 'Content-Type': 'multipart/form-data' },
                         params: {
                             tenantUrl: user.tenantUrl,
@@ -1017,7 +1018,7 @@ const CustomAlgorithmTab = ({ setCreatedAlgorithms }) => {
                         const hyperFormData = new FormData();
                         hyperFormData.append('file', hyperFile);
 
-                        await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/ai/custom-algorithms/upload-hyperparams`, hyperFormData, {
+                        await axios.post(`${API_BASE_URL}/api/ai/custom-algorithms/upload-hyperparams`, hyperFormData, {
                             headers: { 'Content-Type': 'multipart/form-data' },
                             params: {
                                 tenantUrl: user.tenantUrl,

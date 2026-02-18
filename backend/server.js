@@ -332,6 +332,7 @@ app.post('/api/parse', upload.single('file'), async (req, res) => {
     res.json({ roles });
   } catch (error) {
     console.error('[Parse Error]', error.message);
+    console.error('[Parse Error Stack]', error.stack);
 
     // Check if it's a Gemini error
     if (error.message.includes('Extraction failed') || error.message.includes('generative ai failed') || error.message.includes('GoogleGenerativeAI') || error.message.includes('Failed to extract')) {

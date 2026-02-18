@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain, UploadCloud } from 'lucide-react';
@@ -55,7 +56,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/genai/check`,
+                    `${API_BASE_URL}/api/csp/genai/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -76,7 +77,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkIonProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/ion/check`,
+                    `${API_BASE_URL}/api/csp/ion/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -97,7 +98,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkDataFabricProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/datafabric/check`,
+                    `${API_BASE_URL}/api/csp/datafabric/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -118,7 +119,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkInforAiProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/csp/inforai/check`,
+                    `${API_BASE_URL}/api/csp/inforai/check`,
                     {
                         tenantUrl: user.tenantUrl,
                         token: user.token
@@ -140,7 +141,7 @@ export const CSPTools = ({ className, compact }) => {
             try {
                 // Using the proxy to check ifsservice availability via user check
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
+                    `${API_BASE_URL}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'ifsservice/usermgt/v2/users/me',
@@ -163,7 +164,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkReviewCenterProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
+                    `${API_BASE_URL}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'RPA/rpaactuatorsvc/api/v1/rpa/exception/usecasetypes?page=0&size=20',
@@ -186,7 +187,7 @@ export const CSPTools = ({ className, compact }) => {
         const checkRpaManagementProvisioning = async () => {
             try {
                 const response = await axios.post(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
+                    `${API_BASE_URL}/api/proxy`,
                     {
                         tenantUrl: user.tenantUrl,
                         endpoint: 'RPA/api/v1/rpa/process?environment=default',
@@ -362,7 +363,7 @@ const SecurityRoles = () => {
 
         try {
             // Call our Backend Parsing Endpoint
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const res = await axios.post(`${apiUrl}/api/parse`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -413,7 +414,7 @@ const SecurityRoles = () => {
     const fetchRoles = async () => {
         try {
             setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+            const apiUrl = API_BASE_URL;
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl: user.tenantUrl,
                 endpoint: 'ifsservice/usermgt/v2/users/me',

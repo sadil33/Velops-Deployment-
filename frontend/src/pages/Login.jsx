@@ -4,6 +4,7 @@ import { ShieldCheck, FileUp, AlertTriangle, X, CheckCircle2 } from 'lucide-reac
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -56,7 +57,7 @@ const Login = () => {
                         const tokenEndpoint = config.pu + config.ot;
 
                         // Exchange Code for Token via Backend
-                        const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+                        const apiUrl = API_BASE_URL;
                         // Prefer localhost origin if we are on localhost, otherwise trust the config
                         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
                         const redirectUri = isLocalhost ? window.location.origin : (config.ru || window.location.origin);
@@ -230,7 +231,7 @@ const Login = () => {
         try {
             // Validate connection (Changed to ifsservice/info as requested)
             const endpoint = 'ifsservice/info';
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
+            const apiUrl = API_BASE_URL;
             const res = await axios.post(`${apiUrl}/api/proxy`, {
                 tenantUrl,
                 endpoint,

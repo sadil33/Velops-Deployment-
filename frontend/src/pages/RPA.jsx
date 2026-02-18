@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Cpu, Hash, ClipboardCheck, Search, Play, FileText, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
 // Helper for copying to clipboard
@@ -34,7 +35,7 @@ const ProcessIDTab = () => {
         setError(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
+                `${API_BASE_URL}/api/proxy`,
                 {
                     tenantUrl: user.tenantUrl,
                     token: user.token,
@@ -263,7 +264,7 @@ const JobIDTab = () => {
         setError(null);
         try {
             const response = await axios.post(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/proxy`,
+                `${API_BASE_URL}/api/proxy`,
                 {
                     tenantUrl: user.tenantUrl,
                     token: user.token,

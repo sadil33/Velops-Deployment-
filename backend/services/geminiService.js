@@ -58,7 +58,10 @@ const extractDataWithGemini = async (documentText) => {
             const parsed = JSON.parse(cleanJson);
             return parsed.extracted_items || [];
         } catch (error) {
-            console.warn(`[Gemini] Model ${modelName} failed:`, error.message);
+            console.error(`[Gemini] Model ${modelName} failed. Error details:`, error);
+            if (error.response) {
+                console.error(`[Gemini] Model ${modelName} response error details:`, JSON.stringify(error.response, null, 2));
+            }
 
             // If this was the last model, throw the error
             if (modelName === modelsToTry[modelsToTry.length - 1]) {

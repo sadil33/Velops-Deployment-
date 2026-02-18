@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Activity, ShieldCheck, Users, Clock, Database, ArrowUpRight, Zap, Copy, Check, TicketPercent } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { CSPTools } from '../components/SecurityRoles';
+import { API_BASE_URL } from '../config';
 
 const container = {
     hidden: { opacity: 0 },
@@ -83,7 +84,7 @@ const Dashboard = () => {
     React.useEffect(() => {
         const fetchActivity = async () => {
             try {
-                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                const apiUrl = API_BASE_URL;
                 const response = await fetch(`${apiUrl}/api/users/activity`);
                 const data = await response.json();
                 if (data.users) {
