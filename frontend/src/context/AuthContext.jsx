@@ -32,28 +32,30 @@ export const AuthProvider = ({ children }) => {
     const [loginCount, setLoginCount] = useState(() => getStoredCount('infor_login_count'));
     const [deploymentCount, setDeploymentCount] = useState(() => getStoredCount('infor_deployment_count'));
 
-    const login = async (tenantUrl, token, userData, loginType = 'PMO') => {
-        const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
-        const sessionData = { tenantUrl, token, userData, userId, loginType };
-        setUser(sessionData);
-        // Persist session
-        localStorage.setItem('infor_session', JSON.stringify(sessionData));
+    const recordActivity = async (currentUser) => {
+        if (!currentUser || !currentUser.userData) return;
 
-        // Increment login count
-        const newCount = loginCount + 1;
-        setLoginCount(newCount);
-        localStorage.setItem('infor_login_count', newCount.toString());
-
-        // Track User Activity on Backend
         try {
-            // Extract user details defensively
-            const username = userData?.response?.userlist?.[0]?.userName || 'Unknown';
-            const displayName = userData?.response?.userlist?.[0]?.displayName || username;
-            const email = userData?.response?.userlist?.[0]?.emails?.[0]?.value || '';
-            const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
-            const tenantId = tenantUrl ? new URL(tenantUrl).pathname.split('/').filter(Boolean).pop() : 'Unknown';
+            const { userData, tenantUrl } = currentUser;
+            const userList = userData?.response?.userlist?.[0];
 
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || '';
+            const username = userList?.userName || 'Unknown';
+            const displayName = userList?.displayName || username;
+            const email = userList?.emails?.[0]?.value || '';
+            const userId = userList?.id || userList?.GUID || 'Unknown';
+
+            let tenantId = 'Unknown';
+            if (tenantUrl) {
+                try {
+                    tenantId = new URL(tenantUrl).pathname.split('/').filter(Boolean).pop();
+                } catch (e) {
+                    console.warn("Invalid tenant URL", e);
+                }
+            }
+
+            // Use the centralized config for API URL
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'https://velops-backend.onrender.com';
+
             await axios.post(`${apiUrl}/api/users/activity`, {
                 username,
                 displayName,
@@ -65,6 +67,29 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.warn('[Auth] Failed to record user activity:', error);
         }
+    };
+
+    // Effect: Record activity whenever user state changes (login or refresh)
+    useEffect(() => {
+        if (user) {
+            recordActivity(user);
+        }
+    }, [user]);
+
+    const login = async (tenantUrl, token, userData, loginType = 'PMO') => {
+        const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
+        const sessionData = { tenantUrl, token, userData, userId, loginType };
+        setUser(sessionData);
+
+        // Persist session
+        localStorage.setItem('infor_session', JSON.stringify(sessionData));
+
+        // Increment login count
+        const newCount = loginCount + 1;
+        setLoginCount(newCount);
+        localStorage.setItem('infor_login_count', newCount.toString());
+
+        // Activity is now handled by the useEffect on `user` state change
     };
 
     const logout = () => {
