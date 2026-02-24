@@ -18,7 +18,7 @@ const Login = () => {
     const [connectionError, setConnectionError] = useState(false); // New state for full page error
 
     // Login Type State
-    const [loginType, setLoginType] = useState('PMO'); // 'PMO' or 'Velops'
+    const [loginType, setLoginType] = useState('Non-Velops'); // 'Non-Velops' or 'Velops'
     const [velopsPassword, setVelopsPassword] = useState('');
 
     // File Drop State
@@ -48,7 +48,7 @@ const Login = () => {
                 try {
                     // Restore config from session storage
                     const storedConfig = sessionStorage.getItem('ion_config');
-                    const storedLoginType = sessionStorage.getItem('login_type') || 'PMO';
+                    const storedLoginType = sessionStorage.getItem('login_type') || 'Non-Velops';
 
                     if (storedConfig) {
                         const config = JSON.parse(storedConfig);
@@ -383,7 +383,7 @@ const Login = () => {
                                 onChange={(e) => setLoginType(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-white/10 text-white focus:border-infor-red focus:ring-1 focus:ring-infor-red outline-none transition-all placeholder:text-slate-500"
                             >
-                                <option value="PMO">PMO Login</option>
+                                <option value="Non-Velops">Non-Velops Login</option>
                                 <option value="Velops">Velops Login</option>
                             </select>
                         </div>

@@ -1,22 +1,21 @@
-# AWS Hosting Guide for Velops Project
+# AWS Hosting Guide (Using AWS CodeCommit)
 
-This guide outlines the recommended approach to host your React Frontend and Node.js Backend on AWS.
+This guide outlines how to host your application using **AWS CodeCommit** as your source repository.
 
-## Architecture Overview
+## Architecture
 
-- **Frontend**: **AWS Amplify**. 
-  - Best for: React/Vite apps.
-  - Features: Automatic CI/CD from Git, CDN hosting, free SSL, simple configuration.
-- **Backend**: **AWS App Runner**.
-  - Best for: API services (Node.js/Express).
-  - Features: Fully managed, auto-scaling, connects directly to your Git repo or Container Registry.
+- **Source Code**: **AWS CodeCommit** (Private Git repositories hosted on AWS).
+- **Frontend**: **AWS Amplify**. Connects directly to CodeCommit.
+- **Backend**: **AWS App Runner** via **Amazon ECR**. 
+  - *Note: App Runner supports direct source deployment from GitHub/Bitbucket only. For CodeCommit, we must package the backend as a Docker image and deploy from Amazon ECR.*
 
 ---
 
 ## Prerequisites
 
-1. **AWS Account**: Ensure you have an active AWS account.
-2. **GitHub Repository**: Push your project to a GitHub repository (private or public).
+1. **AWS CLI** installed and configured locally (`aws configure`).
+2. **Docker** installed and running locally.
+3. **Source Code** pushed to your AWS CodeCommit repository.
 
 ---
 
@@ -24,61 +23,87 @@ This guide outlines the recommended approach to host your React Frontend and Nod
 
 1. **Log in to AWS Console** and search for **AWS Amplify**.
 2. Click **Create new app** -> **Host web app** (Amplify Hosting).
-3. Select **GitHub** and click **Continue**.
-4. Authorize AWS Amplify to access your GitHub account.
-5. Select your repository and the branch (e.g., `main`).
-6. **Build Settings**:
-   - Amplify should auto-detect the settings because you are using Vite.
-   - **Base Directory**: `frontend` (Important: Click "Edit" on the App build settings to set `frontend` as the base directory if your repo root is not the frontend root).
-   - **Build Command**: `npm run build`
-   - **Start Command**: `npm run preview` (or leave blank, Amplify serves the `dist` folder automatically).
-   - **Output Directory**: `dist`
-7. Click **Save and Deploy**.
-8. **Wait**: Amplify will build and deploy your site. Once done, you will get a URL (e.g., `https://main.d12345.amplifyapp.com`).
-
-**Note on Environment Variables**:
-- If your frontend needs the Backend URL, go to **App Settings** -> **Environment variables**.
-- Add `VITE_API_BASE_URL` and set existing value to your **Backend URL** (which you will get in Step 2).
-- You will need to trigger a **Redeploy** of the frontend after obtaining the Backend URL.
+3. Select **AWS CodeCommit** and click **Continue**.
+4. Select your **Repository** and **Branch** (e.g., `main`).
+5. **Build Settings**:
+   - Amplify detects `package.json` and configures the build.
+   - **App name**: Give it a name.
+   - **Build settings**:
+     - Ensure **Base Directory** is set to `frontend`. (Click "Edit" on the build settings YAML if needed).
+     - **Build Command**: `npm run build`
+     - **Output Directory**: `dist`
+6. Click **Save and Deploy**.
+7. **Wait**: Amplify will build and deploy. You will get a URL (e.g., `https://main.d12345.amplifyapp.com`).
 
 ---
 
-## Step 2: Deploy Backend (AWS App Runner)
+## Step 2: Deploy Backend (App Runner via ECR)
 
-1. **Log in to AWS Console** and search for **AWS App Runner**.
+Since App Runner cannot pull *code* directly from CodeCommit, we will build a Docker image and push it to Amazon ECR (Elastic Container Registry).
+
+### A. Create ECR Repository
+1. Go to **Amazon ECR** in AWS Console.
+2. Click **Create repository**.
+3. Visibility settings: **Private**.
+4. Repository name: `velops-backend`.
+5. Click **Create repository**.
+6. Copy the **URI** of your new repository (e.g., `123456789012.dkr.ecr.us-east-1.amazonaws.com/velops-backend`).
+
+### B. Build and Push Docker Image
+Run these commands in your local terminal (from the project root):
+
+1. **Login to ECR**:
+   ```powershell
+   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <YOUR_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+   ```
+   *(Replace `us-east-1` and `<YOUR_ACCOUNT_ID>` with your specific details)*
+
+2. **Build the Image**:
+   ```powershell
+   docker build -t velops-backend ./backend
+   ```
+
+3. **Tag the Image**:
+   ```powershell
+   docker tag velops-backend:latest <YOUR_ECR_URI>:latest
+   ```
+
+4. **Push the Image**:
+   ```powershell
+   docker push <YOUR_ECR_URI>:latest
+   ```
+
+### C. Create App Runner Service
+1. Go to **AWS App Runner** in Console.
 2. Click **Create Service**.
-3. **Source**:
-   - Option A (Easier): **Source Code Repository**. Connect GitHub, select repo/branch.
-     - **Source Directory**: `backend`
-     - **Runtime**: Node.js 18
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
-     - **Port**: `5000`
-   - Option B (Robust): **Container Registry**. (Requires building Docker image and pushing to ECR, see "Advanced" below).
-4. **Configuration**:
-   - **Service Name**: `velops-backend`
-   - **Environment Variables**: Add any variables from your `.env` file here (e.g., `OPENAI_API_KEY`, `PDF_PATH`, etc.).
-5. **Create & Deploy**:
-   - It will take a few minutes.
-   - Once active, copy the **Default domain** URL (e.g., `https://xyz.us-east-1.awsapprunner.com`).
+3. **Source**: **Container Registry**.
+4. **Provider**: **Amazon ECR**.
+5. **Image URI**: Click **Browse** and select `velops-backend` tag `latest`.
+6. **Deployment settings**:
+   - **Trigger**: **Automatic** (deploys new version whenever you push a new image to ECR).
+   - **ECR access role**: Select "Create new service role" (if first time).
+7. **Next** -> **Configuration**:
+   - **Service Name**: `velops-backend`.
+   - **Port**: `5000`.
+   - **Environment Variables**: Add contents of `backend/.env` manually here (e.g., `OPENAI_API_KEY`).
+8. **Create & Deploy**.
+9. Copy the **Default domain** URL once active.
 
 ---
 
 ## Step 3: Connect Frontend and Backend
 
-1. Copy the **Backend URL** from Step 2.
+1. Copy the **Backend URL** from Step 2C.
 2. Go back to **AWS Amplify Console** -> Your App -> **Environment Variables**.
 3. Create/Update variable: `VITE_API_BASE_URL` = `https://<YOUR_EMBEDDED_BACKEND_URL>` (No trailing slash).
-4. Go to the **Hosting** tab and trigger a **Redeploy** (Build) for the changes to take effect.
+4. Go to the **Hosting** tab and trigger a **Redeploy** to apply the changes.
 
 ---
 
-## Advanced: Docker Option (ECS/App Runner with Image)
+## Summary of Workflow (Future Updates)
 
-If you prefer using Docker (recommended for consistency):
-1. Navigate to `backend/`.
-2. Build the image: `docker build -t velops-backend .`
-3. Push to **Amazon ECR** (Elastic Container Registry).
-4. In **App Runner**, select **Amazon ECR** as the source and choose your image.
-
-A `Dockerfile` has been created in the `backend/` folder for this purpose.
+1. **Frontend Change**: Push to CodeCommit -> Amplify auto-deploys.
+2. **Backend Change**: 
+   - Push to CodeCommit (for version control).
+   - **Run** `docker build` & `docker push` commands (locally or via AWS CodeBuild).
+   - App Runner auto-deploys the new image.

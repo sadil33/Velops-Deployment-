@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user]);
 
-    const login = async (tenantUrl, token, userData, loginType = 'PMO') => {
+    const login = async (tenantUrl, token, userData, loginType = 'Non-Velops') => {
         const userId = userData?.response?.userlist?.[0]?.id || userData?.response?.userlist?.[0]?.GUID || 'Unknown';
         const sessionData = { tenantUrl, token, userData, userId, loginType };
         setUser(sessionData);

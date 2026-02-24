@@ -299,6 +299,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const { extractText } = require('./services/fileParser');
 const { extractRolesFromText } = require('./services/roleExtractor'); // Legacy regex extractor
 const { extractDataWithGemini, setDocumentContext, chatWithDocument } = require('./services/geminiService'); // New AI extractor
+const { debug } = require('console');
 
 
 app.post('/api/parse', upload.single('file'), async (req, res) => {

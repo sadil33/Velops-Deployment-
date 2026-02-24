@@ -40,7 +40,7 @@ const Dashboard = () => {
     const tenantId = getTenantId();
     const userName = user?.userData?.response?.userlist?.[0]?.displayName || 'Administrator';
     const userId = user?.userId || 'N/A';
-    const isPMO = user?.loginType === 'PMO';
+    const isNonVelops = user?.loginType === 'Non-Velops';
 
     const [copied, setCopied] = React.useState(false);
 
@@ -231,7 +231,7 @@ const Dashboard = () => {
                                 <p className="text-xs text-slate-400">Validate permissions</p>
                             </div>
                         </div>
-                        {isPMO ? (
+                        {isNonVelops ? (
                             <div
                                 onClick={() => navigate('/dashboard/jira')}
                                 className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-4"
