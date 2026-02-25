@@ -20,15 +20,16 @@ const Prerequisites = () => {
     });
 
     const onDrop = useCallback(async (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (!file) return;
+        if (!acceptedFiles || acceptedFiles.length === 0) return;
 
         setUploading(true);
         setError(null);
         setExtractedRoles([]);
 
         const formData = new FormData();
-        formData.append('file', file);
+        acceptedFiles.forEach(file => {
+            formData.append('files', file);
+        });
 
         try {
             // Call our Backend Parsing Endpoint
@@ -77,8 +78,7 @@ const Prerequisites = () => {
             'text/plain': ['.txt'],
             'image/png': ['.png'],
             'image/jpeg': ['.jpg', '.jpeg']
-        },
-        maxFiles: 1
+        }
     });
 
     return (
@@ -120,7 +120,7 @@ const Prerequisites = () => {
                                 </div>
                                 <div>
                                     <p className="text-xl font-bold text-white">
-                                        {isDragActive ? "Drop the file here..." : "Drag & drop your file here"}
+                                        {isDragActive ? "Drop the files here..." : "Drag & drop your files here"}
                                     </p>
                                     <p className="text-sm text-slate-400 mt-2 font-medium">or click to browse</p>
                                 </div>

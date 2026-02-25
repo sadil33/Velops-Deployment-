@@ -352,14 +352,15 @@ const SecurityRoles = () => {
     const [uploading, setUploading] = useState(false);
 
     const onDrop = useCallback(async (acceptedFiles) => {
-        const file = acceptedFiles[0];
-        if (!file) return;
+        if (!acceptedFiles || acceptedFiles.length === 0) return;
 
         setUploading(true);
         setError(null);
 
         const formData = new FormData();
-        formData.append('file', file);
+        acceptedFiles.forEach(file => {
+            formData.append('files', file);
+        });
 
         try {
             // Call our Backend Parsing Endpoint
@@ -407,8 +408,7 @@ const SecurityRoles = () => {
             'text/plain': ['.txt'],
             'image/png': ['.png'],
             'image/jpeg': ['.jpg', '.jpeg']
-        },
-        maxFiles: 1
+        }
     });
 
     const fetchRoles = async () => {
@@ -545,7 +545,7 @@ const SecurityRoles = () => {
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="font-bold text-white text-sm">
-                                                        {isDragActive ? "Drop file now..." : "Drop requirements document here"}
+                                                        {isDragActive ? "Drop files now..." : "Drop requirements documents here"}
                                                     </p>
                                                     <p className="text-[10px] text-slate-400">PDF, DOCX, TXT - Updates Chat Context</p>
                                                 </div>

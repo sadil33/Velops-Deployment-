@@ -302,31 +302,44 @@ const { extractDataWithGemini, setDocumentContext, chatWithDocument } = require(
 const { debug } = require('console');
 
 
-app.post('/api/parse', upload.single('file'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+app.post('/api/parse', upload.array('files'), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'No files uploaded' });
   }
 
   try {
-    console.log(`[Parse] Processing file: ${req.file.originalname}`);
-    console.log(`[Parse] MimeType: ${req.file.mimetype}`);
+    console.log(`[Parse] Processing ${req.files.length} files...`);
 
-    // Extract text from the file (OCR or Text)
-    const text = await extractText(req.file);
-    console.log(`[Parse] Extracted text length: ${text.length} chars.`);
+    let combinedText = '';
+    let isAllText = true;
+
+    for (const file of req.files) {
+      console.log(`[Parse] Processing file: ${file.originalname}`);
+      console.log(`[Parse] MimeType: ${file.mimetype}`);
+
+      // Extract text from the file (OCR or Text)
+      const text = await extractText(file);
+      console.log(`[Parse] Extracted text length: ${text.length} chars from ${file.originalname}.`);
+
+      combinedText += `\n--- Content from ${file.originalname} ---\n${text}\n`;
+
+      if (file.mimetype !== 'text/plain') {
+        isAllText = false;
+      }
+    }
 
     // Set context for potential chat later
-    setDocumentContext(text);
+    setDocumentContext(combinedText);
 
     let roles = [];
 
     // Conditional Logic: TXT vs Others
-    if (req.file.mimetype === 'text/plain') {
-      console.log('[Parse] Method: Legacy Regex (TXT file)');
-      roles = extractRolesFromText(text);
+    if (isAllText) {
+      console.log('[Parse] Method: Legacy Regex (TXT files)');
+      roles = extractRolesFromText(combinedText);
     } else {
-      console.log('[Parse] Method: Gemini AI (Document/Image)');
-      roles = await extractDataWithGemini(text);
+      console.log('[Parse] Method: Gemini AI (Documents/Images)');
+      roles = await extractDataWithGemini(combinedText);
     }
 
     console.log(`[Parse] Extracted ${roles.length} roles.`);

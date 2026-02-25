@@ -120,6 +120,29 @@ const ChatWithDocument = () => {
                     <div ref={messagesEndRef} />
                 </div>
 
+                {/* Suggested Questions */}
+                {messages.length <= 1 && (
+                    <div className="px-6 py-2 border-t border-white/5 bg-slate-900/30">
+                        <p className="text-xs text-slate-400 mb-2 font-medium">Suggested Questions:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                "Which components are listed in the extracted data?",
+                                "Summarize the key points present in the extracted data.",
+                                "What dates, IDs, or names appear in the extracted data?",
+                                "What actions or steps are mentioned in the extracted data?"
+                            ].map((q, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setInput(q)}
+                                    className="text-xs bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white px-3 py-1.5 rounded-full border border-white/10 transition-colors text-left shadow-sm"
+                                >
+                                    {q}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Input Area */}
                 <div className="p-4 border-t border-white/10 bg-white/5">
                     <form onSubmit={handleSend} className="relative flex gap-2">
