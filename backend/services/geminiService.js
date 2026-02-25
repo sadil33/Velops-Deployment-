@@ -81,21 +81,16 @@ const setDocumentContext = (text) => {
     documentContext = text;
 };
 
+const Bytez = require("bytez.js");
+
 const chatWithDocument = async (question, token, tenantUrl) => {
     if (!documentContext) {
         throw new Error("No document context found. Please upload a file in Prerequisites first.");
     }
 
-    if (!token || !tenantUrl) {
-        throw new Error("Missing authentication details (token or tenantUrl).");
-    }
-
-    // Truncate context if strictly necessary, but Claude has a large context window.
-    // Keeping it safe at ~150k chars.
-    const MAX_CHARS = 150000;
-    const truncatedContext = documentContext.length > MAX_CHARS
-        ? documentContext.substring(0, MAX_CHARS) + "...[TRUNCATED]"
-        : documentContext;
+    const key = "d160bc75f15d74c388bc1befd1772680";
+    const sdk = new Bytez(key);
+    const model = sdk.model("openai/gpt-4o-mini");
 
     const systemPrompt = `Role
 You are a High-Level Data Extraction Engineer.
@@ -107,7 +102,7 @@ Your responsibility is to describe, summarize, and explain the extracted informa
 Core Rules (MANDATORY)
 
 Data-Bound Responses Only
-Use only the information explicitly present in the extracted data.
+Use only the information explicitly present in the extracted data and provide unique data only once.
 Do NOT infer, assume, guess, or hallucinate any information.
 If something is not present in the data, state:
 “This information is not available in the extracted data.”
@@ -137,59 +132,60 @@ Use clear bullet points or numbered lists.
 Be concise, factual, and structured.
 No storytelling, no explanations beyond what the data supports.`;
 
-    // Construct the final combined prompt
-    const finalPrompt = `${systemPrompt}\n\nEXTRACTED DATA:\n${truncatedContext}\n\nUSER QUESTION:\n${question}`;
+    const combinedContent = `EXTRACTED DATA: ${documentContext}\n\nSYSTEM PROMPT: ${systemPrompt}\n\nUSER QUESTION: ${question}`;
 
     try {
-        const cleanTenantUrl = tenantUrl.replace(/\/$/, '');
-        const colemanUrl = `${cleanTenantUrl}/GENAI/chatsvc/api/v1/prompt`;
+        console.log(`[Bytez SDK] Running model: openai/gpt-4o-mini`);
 
-        console.log(`[Coleman AI] Sending request to: ${colemanUrl}`);
-
-        const response = await axios.post(colemanUrl, {
-            config: {
-                temperature: 0.1
-            },
-            prompt: finalPrompt,
-            model: "CLAUDE",
-            version: "claude-3-5-sonnet-20241022-v2:0"
-        }, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'x-infor-logicalidprefix': 'lid://infor.colemanddp',
-                'Content-Type': 'application/json'
+        const { error, output } = await model.run([
+            {
+                "role": "user",
+                "content": combinedContent
             }
-        });
+        ]);
 
-        // Assuming the response structure based on standard Coleman/AI APIs. 
-        // If it returns just text, we might need to adjust. 
-        // Usually it's response.data or response.data.text depending on the endpoint.
-        console.log('[Coleman AI] Response status:', response.status);
-
-        // Check for 'answer' field (Coleman pattern)
-        if (response.data.answer) return response.data.answer;
-
-        // Adjust this extraction based on actual API response structure
-        // If the API returns the raw text directly in a field:
-        if (typeof response.data === 'string') return response.data;
-        if (response.data.text) return response.data.text;
-        if (response.data.content) return response.data.content;
-
-        // Check for OpenAI-like structure (choices[0].message.content)
-        if (response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
-            return response.data.choices[0].message.content;
+        if (error) {
+            console.error("[Bytez SDK Error]", error);
+            throw new Error(`Bytez SDK error: ${JSON.stringify(error)}`);
         }
 
-        // Fallback: return stringified data if structure is unknown
-        return typeof response.data === 'object' ? JSON.stringify(response.data) : response.data;
+        console.log('[Bytez SDK] Success');
+
+        console.log('[Bytez SDK] Raw output:', JSON.stringify(output, null, 2));
+
+        let finalAnswer = "";
+
+        // Strategy 1: Check if output is the message object itself {role, content}
+        if (output && typeof output === 'object' && output.content) {
+            finalAnswer = output.content;
+        }
+        // Strategy 2: Check if output is an array of message objects [{role, content}]
+        else if (Array.isArray(output) && output[0]?.content) {
+            finalAnswer = output[0].content;
+        }
+        // Strategy 3: Check for OpenAI-like structure output.choices[0].message.content
+        else if (output?.choices?.[0]?.message?.content) {
+            finalAnswer = output.choices[0].message.content;
+        }
+        // Strategy 4: Fallback to text properties
+        else if (output?.text || output?.output) {
+            finalAnswer = output.text || output.output;
+        }
+        // Strategy 5: If it's already a string, use it
+        else if (typeof output === 'string') {
+            finalAnswer = output;
+        }
+        // Strategy 6: Catch-all for objects
+        else {
+            finalAnswer = JSON.stringify(output);
+        }
+
+        console.log('[Bytez SDK] Extracted content:', finalAnswer);
+        return finalAnswer;
 
     } catch (error) {
-        console.error("[Coleman AI Chat Error]", error.message);
-        if (error.response) {
-            console.error("[Coleman AI Error Details]", error.response.data);
-            throw new Error(`Coleman AI failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-        }
-        throw new Error(`Coleman AI failed: ${error.message}`);
+        console.error("[Bytez SDK Exception]", error.message);
+        throw new Error(`Bytez SDK failed: ${error.message}`);
     }
 };
 
