@@ -12,14 +12,89 @@ const getGenAI = () => {
     return new GoogleGenerativeAI(apiKey);
 };
 
-const extractDataWithGemini = async (documentText) => {
+const extractDataWithGemini = async (documentText, documentType = 'roles') => {
     const genAI = getGenAI();
     if (!genAI) {
         throw new Error("Gemini API Key is missing. Please configure GEMINI_API_KEY.");
     }
 
-    // Using the user-provided prompt template
-    const prompt = `
+    let prompt = "";
+    if (documentType === 'arguments') {
+        prompt = `
+    You are a strict data extraction engine extracting only Argument Names and their Raw Values.
+
+RULES:
+
+1. Extract the primary argument name (before the first dash "-" or colon ":").
+   Ignore any numbering before the argument (e.g., 1, 2, 41, etc.).
+
+2. Extract the raw value for that argument (usually after the word "value :" or "example :").
+
+3. Ignore scope labels completely, including but not limited to:
+   - Process scope
+   - User scope
+   - Configuration
+   - Process
+   - User
+
+4. STRIP AWAY everything else! Remove:
+   - descriptions (e.g. "Logical identifier of the...")
+   - scope labels (e.g. "Process scope", "User", "Configuration")
+   - numbering before the argument name
+   - prefixes like "example :" or "value :"
+
+5. Format output exactly as:
+   {argument name}:{cleaned value}
+
+6. Return the output as a valid JSON object with a single key "extracted_items" which is an array of strings, where each string is formatted exactly as shown below.
+
+Example format:
+{
+  "extracted_items": [
+    "argumentName:value"
+  ]
+}
+
+EXAMPLES OF CORRECT EXTRACTION:
+
+Input:
+1 bodLogicalID - Logical identifier of the IMS-to-LN connection point. value : Studio : infor.ims.imsfromrpastudio Assistant/Agent: infor.ims.imsfromrpaagent
+
+Output:
+bodLogicalID:Studio : infor.ims.imsfromrpastudio Assistant/Agent: infor.ims.imsfromrpaagent
+
+Input:
+numberOfAttachments: example : 20 : User : Maximum number of invoices to process
+
+Output:
+numberOfAttachments:20
+
+Input:
+sendLogsToIDM: False (or) True : Process : Configuration flag used to control whether logs are sent
+
+Output:
+sendLogsToIDM:False (or) True
+
+Input:
+groupCompany: example : 0467 : User : LN Company
+
+Output:
+groupCompany:0467
+
+Input:
+accountingEntity: example : 0467 : User : LN Accounting Entity
+
+Output:
+accountingEntity:0467
+
+7. Do not include Markdown formatting (like json). 
+Return only the raw JSON string.
+
+    DOCUMENT TEXT:
+    ${documentText}
+    `;
+    } else {
+        prompt = `
     You are a strict data extraction engine. Your SOLE job is to extract Security Roles from the provided text.
 
     TARGET DATA: Security Roles (typically technical identifiers like 'IG_Role_Name', 'RPA_Admin', 'FND_WebUser', etc.)
@@ -34,6 +109,7 @@ const extractDataWithGemini = async (documentText) => {
     DOCUMENT TEXT:
     ${documentText}
     `;
+    }
 
     const modelsToTry = [
         "gemini-3-flash-preview",
@@ -81,16 +157,14 @@ const setDocumentContext = (text) => {
     documentContext = text;
 };
 
-const Bytez = require("bytez.js");
-
 const chatWithDocument = async (question, token, tenantUrl) => {
     if (!documentContext) {
         throw new Error("No document context found. Please upload a file in Prerequisites first.");
     }
 
-    const key = "b131c3d8be1f824396072eac5feb3783";
-    const sdk = new Bytez(key);
-    const model = sdk.model("openai/gpt-4o-mini");
+    if (!token || !tenantUrl) {
+        throw new Error("Missing authentication (token/tenantUrl).");
+    }
 
     const systemPrompt = `You are a High-Level Data Extraction Engineer.
 
@@ -169,57 +243,53 @@ Response Format (STRICT)
     const combinedContent = `EXTRACTED DATA: ${documentContext}\n\nSYSTEM PROMPT: ${systemPrompt}\n\nUSER QUESTION: ${question}`;
 
     try {
-        console.log(`[Bytez SDK] Running model: openai/gpt-4o-mini`);
+        const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+        const targetUrl = `${cleanTenantUrl}/GENAI/chatsvc/api/v1/prompt`;
 
-        const { error, output } = await model.run([
-            {
-                "role": "user",
-                "content": combinedContent
+        console.log(`[GenAI] Running chat model at: ${targetUrl}`);
+
+        const response = await axios.post(targetUrl, {
+            config: {
+                temperature: 0.1
+            },
+            prompt: combinedContent
+        }, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'x-infor-logicalidprefix': 'lid://infor.colemanddp'
+            },
+            validateStatus: function (status) {
+                return status < 500; // Handle 4xx gracefully
             }
-        ]);
+        });
 
-        if (error) {
-            console.error("[Bytez SDK Error]", error);
-            throw new Error(`Bytez SDK error: ${JSON.stringify(error)}`);
+        if (response.status !== 200) {
+            console.error(`[GenAI Error] Status: ${response.status}`, response.data);
+            throw new Error("please provision genai in the tenant");
         }
 
-        console.log('[Bytez SDK] Success');
-
-        console.log('[Bytez SDK] Raw output:', JSON.stringify(output, null, 2));
+        console.log('[GenAI] Success');
 
         let finalAnswer = "";
+        const output = response.data;
 
-        // Strategy 1: Check if output is the message object itself {role, content}
-        if (output && typeof output === 'object' && output.content) {
-            finalAnswer = output.content;
-        }
-        // Strategy 2: Check if output is an array of message objects [{role, content}]
-        else if (Array.isArray(output) && output[0]?.content) {
-            finalAnswer = output[0].content;
-        }
-        // Strategy 3: Check for OpenAI-like structure output.choices[0].message.content
-        else if (output?.choices?.[0]?.message?.content) {
-            finalAnswer = output.choices[0].message.content;
-        }
-        // Strategy 4: Fallback to text properties
-        else if (output?.text || output?.output) {
-            finalAnswer = output.text || output.output;
-        }
-        // Strategy 5: If it's already a string, use it
-        else if (typeof output === 'string') {
+        // Infor GenAI responses typically return a text string, or an object containing a 'response' or 'text' field.
+        if (output && typeof output === 'object') {
+            finalAnswer = output.response || output.text || output.message || output.content || JSON.stringify(output);
+        } else if (typeof output === 'string') {
             finalAnswer = output;
         }
-        // Strategy 6: Catch-all for objects
-        else {
-            finalAnswer = JSON.stringify(output);
-        }
 
-        console.log('[Bytez SDK] Extracted content:', finalAnswer);
+        console.log('[GenAI] Extracted content length:', finalAnswer.length);
         return finalAnswer;
 
     } catch (error) {
-        console.error("[Bytez SDK Exception]", error.message);
-        throw new Error(`Bytez SDK failed: ${error.message}`);
+        console.error("[GenAI Exception]", error.message);
+        if (error.message === "please provision genai in the tenant") {
+            throw error;
+        }
+        throw new Error(`GenAI failed: ${error.message}`);
     }
 };
 

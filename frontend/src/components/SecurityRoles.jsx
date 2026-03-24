@@ -3,7 +3,8 @@ import axios from 'axios';
 import { API_BASE_URL } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain, UploadCloud } from 'lucide-react';
+import { useDocumentContext } from '../context/DocumentContext';
+import { Shield, Loader2, CheckCircle2, XCircle, FileText, Search, X, Bot, Wrench, Zap, Database, Brain, UploadCloud, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 // Security Roles Component
@@ -343,62 +344,17 @@ export const CSPTools = ({ className, compact }) => {
 };
 
 const SecurityRoles = () => {
-    const { user, requirements, setRequirements } = useAuth(); // requirements from file upload
+    const { user } = useAuth();
+    const { extractedRoles, isProcessing, processingError, processDocument } = useDocumentContext();
     const [activeTab, setActiveTab] = useState('roles');
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [uploading, setUploading] = useState(false);
 
     const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
-
-        setUploading(true);
-        setError(null);
-
-        const formData = new FormData();
-        acceptedFiles.forEach(file => {
-            formData.append('files', file);
-        });
-
-        try {
-            // Call our Backend Parsing Endpoint
-            const apiUrl = API_BASE_URL;
-            const res = await axios.post(`${apiUrl}/api/parse`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            const roles = res.data.roles || [];
-            console.log('Parsed Roles:', roles);
-
-            if (roles.length === 0) {
-                setError("No security roles were found in this document. Please check the file content.");
-            } else {
-                setRequirements(roles);
-                // Also update localStorage for persistence if AuthContext doesn't handle it
-                // AuthContext initializes from empty array usually, but let's trust it handles session or we handle it here if needed.
-                // Actually AuthContext doesn't seem to sync 'requirements' to localStorage in the code I saw, 
-                // but Prerequisites.jsx does manual localStorage.setItem('infor_extracted_roles', ...).
-                // Let's emulate that consistency.
-                localStorage.setItem('infor_extracted_roles', JSON.stringify(roles));
-            }
-
-        } catch (err) {
-            console.error(err);
-            // Check for specific GenAI failure
-            if (err.response?.data?.error === "Extraction failed in genai") {
-                setError("Extraction failed in genai");
-            } else {
-                const msg = err.response?.data?.error || "Failed to parse the file. Please try again.";
-                setError(msg);
-            }
-        } finally {
-            setUploading(false);
-        }
-    }, [setRequirements]);
+        await processDocument(acceptedFiles);
+    }, [processDocument]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -460,7 +416,7 @@ const SecurityRoles = () => {
 
     // Comparison Logic
     const activeRoleNames = new Set(groups.map(g => g.display?.trim().toLowerCase()));
-    const hasRequirements = requirements && requirements.length > 0;
+    const hasRequirements = extractedRoles && extractedRoles.length > 0;
 
     return (
         <motion.div
@@ -528,12 +484,12 @@ const SecurityRoles = () => {
                                             border border-dashed rounded-xl p-4 text-center cursor-pointer transition-all duration-300
                                             flex flex-row items-center justify-center gap-4
                                             ${isDragActive ? 'border-infor-red bg-red-500/10 scale-[1.01]' : 'border-white/10 bg-white/5 hover:border-infor-red/50 hover:bg-white/10'}
-                                            ${uploading ? 'opacity-50 pointer-events-none' : ''}
+                                            ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
                                         `}
                                     >
                                         <input {...getInputProps()} />
 
-                                        {uploading ? (
+                                        {isProcessing ? (
                                             <>
                                                 <Loader2 className="w-5 h-5 text-infor-red animate-spin" />
                                                 <p className="font-bold text-infor-red text-sm">Analyzing...</p>
@@ -552,6 +508,12 @@ const SecurityRoles = () => {
                                             </>
                                         )}
                                     </div>
+                                    {processingError && (
+                                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl flex items-center gap-2">
+                                            <AlertCircle className="w-4 h-4 shrink-0" />
+                                            <span className="text-sm font-medium">{processingError}</span>
+                                        </div>
+                                    )}
                                 </motion.div>
 
                                 {/* SECTION 1: REQUIREMENTS ANALYSIS */}
@@ -573,12 +535,13 @@ const SecurityRoles = () => {
                                                 </div>
                                             </div>
                                             <div className="text-sm font-bold px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg">
-                                                {requirements.length} Required Roles
+                                                {extractedRoles.length} Required Roles
                                             </div>
                                         </div>
 
                                         <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {requirements.map((reqRole, idx) => {
+                                            {extractedRoles.map((reqRoleRaw, idx) => {
+                                                const reqRole = typeof reqRoleRaw === 'string' ? reqRoleRaw : JSON.stringify(reqRoleRaw);
                                                 const isPresent = activeRoleNames.has(reqRole.trim().toLowerCase());
                                                 return (
                                                     <motion.div

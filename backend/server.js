@@ -307,6 +307,10 @@ app.post('/api/parse', upload.array('files'), async (req, res) => {
     return res.status(400).json({ error: 'No files uploaded' });
   }
 
+  const documentType = req.body.documentType || 'roles';
+  console.log('[Parse Request Body]', req.body);
+  console.log('[Parse Resolved Document Type]', documentType);
+
   try {
     console.log(`[Parse] Processing ${req.files.length} files...`);
 
@@ -332,18 +336,40 @@ app.post('/api/parse', upload.array('files'), async (req, res) => {
     setDocumentContext(combinedText);
 
     let roles = [];
+    let extractedArguments = [];
 
-    // Conditional Logic: TXT vs Others
-    if (isAllText) {
-      console.log('[Parse] Method: Legacy Regex (TXT files)');
-      roles = extractRolesFromText(combinedText);
+    if (documentType === 'all') {
+      console.log(`[Parse] Processing 'all' types of extraction`);
+      const rolesPromise = isAllText
+        ? Promise.resolve(extractRolesFromText(combinedText))
+        : extractDataWithGemini(combinedText, 'roles');
+
+      const argsPromise = extractDataWithGemini(combinedText, 'arguments');
+
+      const [extractedRoles, args] = await Promise.all([rolesPromise, argsPromise]);
+      roles = extractedRoles || [];
+      extractedArguments = args || [];
+
+      console.log(`[Parse] Extracted ${roles.length} roles and ${extractedArguments.length} arguments.`);
+      res.json({ roles, extracted_arguments: extractedArguments });
     } else {
-      console.log('[Parse] Method: Gemini AI (Documents/Images)');
-      roles = await extractDataWithGemini(combinedText);
-    }
+      // Conditional Logic: TXT vs Others for single documentType
+      if (documentType === 'roles' && isAllText) {
+        console.log('[Parse] Method: Legacy Regex (TXT files)');
+        roles = extractRolesFromText(combinedText);
+      } else {
+        console.log(`[Parse] Method: Gemini AI (Documents/Images) - Type: ${documentType}`);
+        roles = await extractDataWithGemini(combinedText, documentType);
+      }
 
-    console.log(`[Parse] Extracted ${roles.length} roles.`);
-    res.json({ roles });
+      if (documentType === 'arguments') {
+        console.log(`[Parse] Extracted ${roles?.length || 0} arguments.`);
+        res.json({ extracted_arguments: roles || [] });
+      } else {
+        console.log(`[Parse] Extracted ${roles?.length || 0} roles.`);
+        res.json({ roles: roles || [] });
+      }
+    }
   } catch (error) {
     console.error('[Parse Error]', error.message);
     console.error('[Parse Error Stack]', error.stack);
@@ -1663,7 +1689,6 @@ app.post('/api/ai/quests', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('[AI Quest Deploy Error]', error.message);
     res.status(500).json({
-      error: error.response?.data?.message || error.message,
       details: error.response?.data
     });
   }
@@ -1684,41 +1709,145 @@ app.post('/api/ai/quests/train', async (req, res) => {
   }
 
   const results = [];
-  const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
 
-  console.log(`[AI Quest Train] Processing: ${names.join(', ')}`);
+    console.log(`[AI Quest Train] Processing: ${names.join(', ')}`);
 
-  for (const name of names) {
-    try {
-      const trainUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/mlquests/${encodeURIComponent(name)}/trainingrun`;
-      console.log(`[AI Quest Train] calling: ${trainUrl}`);
+    for (const name of names) {
+      try {
+        const trainUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/mlquests/${encodeURIComponent(name)}/trainingrun`;
+        console.log(`[AI Quest Train] calling: ${trainUrl}`);
 
-      const response = await axios.post(trainUrl, {}, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+        const response = await axios.post(trainUrl, {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      results.push({ name, status: 'success', data: response.data });
-      console.log(`[AI Quest Train] Success for: ${name}`);
+        results.push({ name, status: 'success', data: response.data });
+        console.log(`[AI Quest Train] Success for: ${name}`);
 
-    } catch (error) {
-      console.error(`[AI Quest Train Error] For ${name}:`, error.message);
-      results.push({
-        name,
-        status: 'error',
-        message: error.response?.data?.message || error.message
-      });
+      } catch (error) {
+        console.error(`[AI Quest Train Error] For ${name}:`, error.message);
+        results.push({
+          name,
+          status: 'error',
+          message: error.response?.data?.message || error.message
+        });
+      }
     }
-  }
 
-  res.json({
-    success: results.some(r => r.status === 'success'),
-    results
-  });
+    res.json({
+      success: results.some(r => r.status === 'success'),
+      results
+    });
+  } catch (error) {
+    console.error('[AI Quest Train General Error]', error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// Coleman AI Quest Status Check Endpoint
+app.get('/api/ai/quests/:questName/status', async (req, res) => {
+  const { questName } = req.params;
+  const { tenantUrl, token, tenantId } = req.query;
+
+  if (!questName || !tenantUrl || !token || !tenantId) {
+    return res.status(400).json({ error: 'Missing questName, tenantUrl, token, or tenantId' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    // Some Coleman AI APIs require tenantUrl to NOT have a trailing slash, handled above.
+    const statusUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/mlquests/${encodeURIComponent(questName)}/status`;
+
+    console.log(`[AI Quest Status] Checking: ${questName}`);
+    console.log(`[AI Quest Status] Calling: ${statusUrl}`);
+
+    const response = await axios.get(statusUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    console.log(`[AI Quest Status] Success for: ${questName}`);
+    res.json(response.data);
+
+  } catch (error) {
+    console.error(`[AI Quest Status Error] For ${questName}:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+// Coleman AI Realtime Production Endpoint Deploy
+app.put('/api/ai/quests/:questName/endpoint/deploy', async (req, res) => {
+  const { questName } = req.params;
+  const { tenantUrl, token } = req.query;
+
+  if (!questName || !tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing questName, tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const deployUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/mlquests/${encodeURIComponent(questName)}/production`;
+
+    console.log(`[AI Quest Deploy] Deploying endpoint for: ${questName}`);
+
+    const response = await axios.put(deployUrl, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error(`[AI Quest Deploy Error] For ${questName}:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
+
+// Coleman AI Realtime Production Run
+app.post('/api/ai/quests/:questName/productionrun', async (req, res) => {
+  const { questName } = req.params;
+  const { tenantUrl, token } = req.query;
+
+  if (!questName || !tenantUrl || !token) {
+    return res.status(400).json({ error: 'Missing questName, tenantUrl or token' });
+  }
+
+  try {
+    const cleanTenantUrl = tenantUrl.endsWith('/') ? tenantUrl.slice(0, -1) : tenantUrl;
+    const runUrl = `${cleanTenantUrl}/COLEMANAI/ml/model/v1/mlquests/${encodeURIComponent(questName)}/productionrun`;
+
+    console.log(`[AI Quest Production Run] Running production for: ${questName}`);
+
+    const response = await axios.post(runUrl, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error(`[AI Quest Production Run Error] For ${questName}:`, error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data?.message || error.message,
+      details: error.response?.data
+    });
+  }
+});
 // Coleman AI Optimization Quest Deployment Endpoint
 app.post('/api/ai/optimization/quests', upload.single('file'), async (req, res) => {
   if (!req.file) {

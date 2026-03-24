@@ -1,5 +1,6 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DocumentProvider } from './context/DocumentContext';
 import Login from './pages/Login';
 import Prerequisites from './pages/Prerequisites';
 import Dashboard from './pages/Dashboard';
@@ -22,36 +23,44 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/404" element={<NotFound />} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
+        <DocumentProvider>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
 
-          <Route path="/prerequisites" element={
-            <ProtectedRoute>
-              <Prerequisites />
-            </ProtectedRoute>
-          } />
+            <Route path="/prerequisites" element={
+              <ProtectedRoute>
+                <Prerequisites />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/dashboard/*" element={
-            <ProtectedRoute>
-              <SidebarLayout />
-            </ProtectedRoute>
-          } />
+            <Route path="/dashboard/*" element={
+              <ProtectedRoute>
+                <SidebarLayout />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/dashboard/ai" element={
-            <ProtectedRoute>
-              <SidebarLayout />
-            </ProtectedRoute>
-          } />
+            <Route path="/dashboard/ai" element={
+              <ProtectedRoute>
+                <SidebarLayout />
+              </ProtectedRoute>
+            } />
 
-          <Route path="/dashboard/chat" element={
-            <ProtectedRoute>
-              <SidebarLayout />
-            </ProtectedRoute>
-          } />
+            <Route path="/dashboard/chat" element={
+              <ProtectedRoute>
+                <SidebarLayout />
+              </ProtectedRoute>
+            } />
 
-        </Routes>
+            <Route path="/dashboard/document-details" element={
+              <ProtectedRoute>
+                <SidebarLayout />
+              </ProtectedRoute>
+            } />
+
+          </Routes>
+        </DocumentProvider>
       </AuthProvider>
     </Router>
   );

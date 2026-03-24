@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Shield, Upload, Cloud, LogOut, User, BrainCircuit, Ticket, Bot, FileSearch, MessageSquare, FileText } from 'lucide-react';
 import Dashboard from '../pages/Dashboard';
 import SecurityRoles from './SecurityRoles';
 import ChatWithDocument from '../pages/ChatWithDocument';
@@ -11,6 +11,7 @@ import ArtificialIntelligence from '../pages/ArtificialIntelligence';
 import RPA from '../pages/RPA';
 import IDP from '../pages/IDP';
 import JiraTickets from '../pages/JiraTickets';
+import DocumentDetails from '../pages/DocumentDetails';
 
 const SidebarLayout = () => {
     const { user, logout } = useAuth();
@@ -28,7 +29,8 @@ const SidebarLayout = () => {
     const isIDP = currentPath.includes('/idp');
     const isJira = currentPath.includes('/jira');
     const isChat = currentPath.includes('/chat');
-    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP && !isChat;
+    const isDocDetails = currentPath.includes('/document-details');
+    const isDashboard = !isRoles && !isIDM && !isION && !isAI && !isJira && !isRPA && !isIDP && !isChat && !isDocDetails;
 
     // Redirect unauthorized users accessing restricted routes
     useEffect(() => {
@@ -102,6 +104,18 @@ const SidebarLayout = () => {
                     >
                         <Ticket className="w-5 h-5" />
                         Jira Tickets
+                    </NavLink>
+
+                    {/* Document Details - Visible to All */}
+                    <NavLink
+                        to="/dashboard/document-details"
+                        className={({ isActive }) => `flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 font-medium group ${isActive
+                            ? 'bg-gradient-to-r from-infor-red to-[#b00029] text-white shadow-lg shadow-red-900/30 translate-x-1'
+                            : 'text-slate-400 hover:bg-white/10 hover:text-white hover:translate-x-1 hover:shadow-md'
+                            }`}
+                    >
+                        <FileText className="w-5 h-5" />
+                        Document Details
                     </NavLink>
 
                     {/* Restricted Routes - Only for Velops Login */}
@@ -230,6 +244,8 @@ const SidebarLayout = () => {
                     <div style={{ display: isChat ? 'block' : 'none' }}>
                         <ChatWithDocument />
                     </div>
+
+                    {isDocDetails && <DocumentDetails />}
                 </div>
             </main>
         </div>

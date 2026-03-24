@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Database, Sword, Code2, Upload, FileJson, BrainCircuit, Rocket, Zap, XCircle } from 'lucide-react';
+import { Database, Sword, Code2, Upload, FileJson, BrainCircuit, Rocket, Zap, XCircle, Play } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import JSZip from 'jszip';
@@ -324,6 +324,16 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
     const [algoMappings, setAlgoMappings] = useState({});
     const [showMapper, setShowMapper] = useState(false);
 
+    // Status Check State
+    const [statusNames, setStatusNames] = useState('');
+    const [checkingStatus, setCheckingStatus] = useState(false);
+    const [statusResults, setStatusResults] = useState(null);
+
+    // Realtime Production State
+    const [realtimeQuestName, setRealtimeQuestName] = useState('');
+    const [runningRealtime, setRunningRealtime] = useState(false);
+    const [runningProductionOnly, setRunningProductionOnly] = useState(false);
+
     // Deployment Handler
     const onDrop = useCallback((acceptedFiles) => {
         if (!acceptedFiles?.length) return;
@@ -452,14 +462,15 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
         setAlgoMappings({});
         setShowMapper(false);
 
-        // Auto-populate train
         const successfulNames = results.filter(r => r.status === 'success').map(r => r.name.replace(/\.[^/.]+$/, ""));
         if (successfulNames.length > 0) {
-            setTrainNames(prev => {
+            const updateNames = (prev) => {
                 const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
                 const newNames = successfulNames.filter(n => !existing.includes(n));
                 return [...existing, ...newNames].join(', ');
-            });
+            };
+            setTrainNames(updateNames);
+            setStatusNames(updateNames);
         }
 
         setUploading(false);
@@ -493,6 +504,148 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
             setTrainResults({ success: false, results: [] });
         } finally {
             setTraining(false);
+        }
+    };
+
+    const handleCheckStatus = async () => {
+        if (!statusNames.trim()) return;
+        setCheckingStatus(true);
+        setStatusResults(null);
+
+        const names = statusNames.split(',').map(n => n.trim()).filter(Boolean);
+        const results = [];
+
+        try {
+            for (const name of names) {
+                try {
+                    let tenantId = 'Unknown';
+                    if (user?.tenantUrl) {
+                        try {
+                            tenantId = new URL(user.tenantUrl).pathname.split('/').filter(Boolean).pop() || 'Unknown';
+                        } catch (e) {
+                            console.warn("Invalid tenant URL", e);
+                        }
+                    }
+
+                    const response = await axios.get(
+                        `${API_BASE_URL}/api/ai/quests/${encodeURIComponent(name)}/status`,
+                        {
+                            params: {
+                                tenantUrl: user.tenantUrl,
+                                token: user.token,
+                                tenantId: tenantId
+                            }
+                        }
+                    );
+                    results.push({ name, status: 'success', data: response.data });
+                } catch (error) {
+                    console.error(`Status check failed for ${name}:`, error);
+                    results.push({
+                        name,
+                        status: 'error',
+                        message: error.response?.data?.error || error.message
+                    });
+                }
+            }
+            setStatusResults(results);
+        } catch (error) {
+            console.error("General status check failed:", error);
+        } finally {
+            setCheckingStatus(false);
+        }
+    };
+
+    const handleRealtimeProduction = async () => {
+        if (!realtimeQuestName.trim() || !user?.tenantUrl || !user?.token) return;
+
+        setRunningRealtime(true);
+        const name = realtimeQuestName.trim();
+        setStatusResults([{ name, status: 'success', message: 'Deploying endpoint...', data: { status: 'Deploying' } }]);
+
+        try {
+            // Extract tenantId
+            let tenantId = "";
+            try {
+                const urlObj = new URL(user.tenantUrl);
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                if (pathParts.length > 0) {
+                    tenantId = pathParts[0];
+                }
+            } catch (e) {
+                console.warn("Invalid tenant URL", e);
+            }
+
+            // 1. Deploy Endpoint
+            await axios.put(
+                `${API_BASE_URL}/api/ai/quests/${encodeURIComponent(name)}/endpoint/deploy`,
+                {},
+                {
+                    params: {
+                        tenantUrl: user.tenantUrl,
+                        token: user.token,
+                        tenantId: tenantId
+                    }
+                }
+            );
+
+            setStatusResults([{ name, status: 'success', message: 'Endpoint deployed successfully.', data: { status: 'Deployed' } }]);
+
+        } catch (error) {
+            console.error(`Realtime production failed for ${name}:`, error);
+            setStatusResults([{
+                name,
+                status: 'error',
+                message: error.response?.data?.error || error.message
+            }]);
+        } finally {
+            setRunningRealtime(false);
+        }
+    };
+
+    const handleProductionRunOnly = async () => {
+        if (!realtimeQuestName.trim() || !user?.tenantUrl || !user?.token) return;
+
+        setRunningProductionOnly(true);
+        const name = realtimeQuestName.trim();
+        setStatusResults([{ name, status: 'success', message: 'Starting production run...', data: { status: 'Running' } }]);
+
+        try {
+            // Extract tenantId
+            let tenantId = "";
+            try {
+                const urlObj = new URL(user.tenantUrl);
+                const pathParts = urlObj.pathname.split('/').filter(p => p);
+                if (pathParts.length > 0) {
+                    tenantId = pathParts[0];
+                }
+            } catch (e) {
+                console.warn("Invalid tenant URL", e);
+            }
+
+            // Production Run
+            await axios.post(
+                `${API_BASE_URL}/api/ai/quests/${encodeURIComponent(name)}/productionrun`,
+                {},
+                {
+                    params: {
+                        tenantUrl: user.tenantUrl,
+                        token: user.token,
+                        tenantId: tenantId
+                    }
+                }
+            );
+
+            setStatusResults([{ name, status: 'success', message: 'Production run initiated successfully!', data: { status: 'Success' } }]);
+
+        } catch (error) {
+            console.error(`Production run failed for ${name}:`, error);
+            setStatusResults([{
+                name,
+                status: 'error',
+                message: error.response?.data?.error || error.message
+            }]);
+        } finally {
+            setRunningProductionOnly(false);
         }
     };
 
@@ -707,6 +860,134 @@ const QuestsTab = ({ createdAlgorithms = [] }) => {
                                     <h4 className={`font-bold ${res.status === 'success' ? 'text-green-400' : 'text-red-400'}`}>{res.name}</h4>
                                     <span className="text-xs text-slate-400">{res.message || (res.status === 'success' ? 'Training Started' : 'Failed')}</span>
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Check Quest Status Section */}
+            <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <Rocket className="w-5 h-5 text-infor-red" />
+                    Check Quest Status
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Check Status Column */}
+                    <div className="space-y-4 relative">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Quest Names (comma separated)</label>
+                            <FileDropInput
+                                value={statusNames}
+                                onChange={setStatusNames}
+                                placeholder="e.g. MyQuest1, MyQuest2..."
+                            />
+                        </div>
+                        <div className="flex justify-end">
+                            <button
+                                onClick={handleCheckStatus}
+                                disabled={checkingStatus || !statusNames.trim()}
+                                className="px-6 py-3 bg-infor-red hover:bg-[#b00029] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-infor-red/20 flex items-center gap-2"
+                            >
+                                {checkingStatus ? <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> : <Rocket className="w-5 h-5" />}
+                                {checkingStatus ? 'Checking Status...' : 'Check Status'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Realtime Production Quest Column */}
+                    <div className="space-y-4 relative md:pl-6">
+                        {/* Divider */}
+                        <div className="absolute left-0 top-0 bottom-0 w-px bg-white/10 hidden md:block" />
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Realtime Production Quest Name</label>
+                            <FileDropInput
+                                value={realtimeQuestName}
+                                onChange={setRealtimeQuestName}
+                                placeholder="e.g. MyQuest1"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 flex-wrap">
+                            <button
+                                onClick={handleRealtimeProduction}
+                                disabled={runningRealtime || runningProductionOnly || !realtimeQuestName.trim()}
+                                className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 flex-grow justify-center"
+                            >
+                                {runningRealtime ? <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> : <Play className="w-5 h-5" />}
+                                {runningRealtime ? 'Deploying...' : 'Deploy'}
+                            </button>
+                            <button
+                                onClick={handleProductionRunOnly}
+                                disabled={runningRealtime || runningProductionOnly || !realtimeQuestName.trim()}
+                                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 flex-grow justify-center"
+                            >
+                                {runningProductionOnly ? <div className="animate-spin w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> : <Zap className="w-5 h-5" />}
+                                {runningProductionOnly ? 'Running...' : 'Production Run'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status Results */}
+                {statusResults && (
+                    <div className="mt-6 space-y-4 max-h-80 overflow-y-auto custom-scrollbar">
+                        {statusResults.map((res, i) => (
+                            <div key={i} className={`p-4 rounded-xl border ${res.status === 'success' ? 'bg-white/5 border-white/10' : 'bg-red-500/10 border-red-500/20'}`}>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className={`font-bold ${res.status === 'success' ? 'text-white' : 'text-red-400'}`}>{res.name}</h4>
+                                    {res.status === 'success' ? (
+                                        <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold ${res.data?.status === 'DEPLOYED' ? 'bg-green-500/20 text-green-400' :
+                                            res.data?.status === 'TRAINED' ? 'bg-blue-500/20 text-blue-400' :
+                                                'bg-yellow-500/20 text-yellow-400'
+                                            }`}>
+                                            {res.data?.status || 'UNKNOWN'}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-red-500">Error</span>
+                                    )}
+                                </div>
+                                {res.status === 'success' && res.data && (
+                                    <div className="grid grid-cols-2 gap-4 text-xs border-t border-white/5 pt-3 mt-1">
+                                        <div className="space-y-1">
+                                            <p className="text-slate-500 font-medium">Training Status</p>
+                                            <p className={`font-semibold ${res.data.trainingQuestStatus === 'FINISHED' ? 'text-green-400' : 'text-slate-300'}`}>
+                                                {res.data.trainingQuestStatus || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-slate-500 font-medium">Endpoint Status</p>
+                                            <p className={`font-semibold ${res.data.endpointStatus === 'INSERVICE' ? 'text-green-400' : 'text-slate-300'}`}>
+                                                {res.data.endpointStatus || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-slate-500 font-medium">Production Status</p>
+                                            <p className={`font-semibold ${res.data.productionQuestStatus === 'FINISHED' ? 'text-green-400' : 'text-slate-300'}`}>
+                                                {res.data.productionQuestStatus || 'N/A'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-slate-500 font-medium">Production Type</p>
+                                            <p className="text-slate-300">{res.data.productionQuestType || 'N/A'}</p>
+                                        </div>
+                                        {res.data.modelType && (
+                                            <div className="space-y-1">
+                                                <p className="text-slate-500 font-medium">Model Type</p>
+                                                <p className="text-slate-300">{res.data.modelType}</p>
+                                            </div>
+                                        )}
+                                        {res.data.createDate && (
+                                            <div className="space-y-1">
+                                                <p className="text-slate-500 font-medium">Created At</p>
+                                                <p className="text-slate-300">{new Date(res.data.createDate).toLocaleString()}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {res.status === 'error' && (
+                                    <p className="text-xs text-red-400 mt-1">{res.message}</p>
+                                )}
                             </div>
                         ))}
                     </div>

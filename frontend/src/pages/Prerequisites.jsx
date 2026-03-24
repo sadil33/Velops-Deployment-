@@ -1,69 +1,26 @@
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL } from '../config';
+import { useDocumentContext } from '../context/DocumentContext';
 import { FileText, UploadCloud, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import Button from '../components/Button';
 
 const Prerequisites = () => {
-    const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState(null);
-    const { setRequirements } = useAuth();
     const navigate = useNavigate();
+    const { setRequirements } = useAuth();
 
-    const [extractedRoles, setExtractedRoles] = useState(() => {
-        const saved = localStorage.getItem('infor_extracted_roles');
-        return saved ? JSON.parse(saved) : [];
-    });
-
+    const {
+        extractedRoles,
+        isProcessing: uploading,
+        processingError: error,
+        processDocument,
+        clearDocumentData
+    } = useDocumentContext();
     const onDrop = useCallback(async (acceptedFiles) => {
-        if (!acceptedFiles || acceptedFiles.length === 0) return;
-
-        setUploading(true);
-        setError(null);
-        setExtractedRoles([]);
-
-        const formData = new FormData();
-        acceptedFiles.forEach(file => {
-            formData.append('files', file);
-        });
-
-        try {
-            // Call our Backend Parsing Endpoint
-            const apiUrl = API_BASE_URL;
-            const res = await axios.post(`${apiUrl}/api/parse`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            const roles = res.data.roles || [];
-            console.log('Parsed Roles:', roles);
-
-            if (roles.length === 0) {
-                setError("No security roles were found in this document. Please check the file content.");
-            } else {
-                setExtractedRoles(roles);
-                localStorage.setItem('infor_extracted_roles', JSON.stringify(roles));
-                // Don't auto-navigate, let user review
-            }
-
-        } catch (err) {
-            console.error(err);
-            // Check for specific GenAI failure
-            if (err.response?.data?.error === "Extraction failed in genai") {
-                setError("Extraction failed in genai");
-            } else {
-                const msg = err.response?.data?.error || "Failed to parse the file. Please try again.";
-                setError(msg);
-            }
-        } finally {
-            setUploading(false);
-        }
-    }, []);
+        await processDocument(acceptedFiles);
+    }, [processDocument]);
 
     const handleProceed = () => {
         setRequirements(extractedRoles);
@@ -141,12 +98,15 @@ const Prerequisites = () => {
                             </h3>
                             <div className="bg-black/30 rounded-xl p-4 max-h-64 overflow-y-auto custom-scrollbar border border-white/10">
                                 <ul className="space-y-2">
-                                    {extractedRoles.map((role, i) => (
-                                        <li key={i} className="flex items-center gap-3 text-slate-300 p-2 rounded hover:bg-white/5 transition-colors">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-infor-red"></div>
-                                            <span className="font-mono text-sm">{role}</span>
-                                        </li>
-                                    ))}
+                                    {extractedRoles.map((roleRaw, i) => {
+                                        const role = typeof roleRaw === 'string' ? roleRaw : JSON.stringify(roleRaw);
+                                        return (
+                                            <li key={i} className="flex items-center gap-3 text-slate-300 p-2 rounded hover:bg-white/5 transition-colors">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-infor-red"></div>
+                                                <span className="font-mono text-sm">{role}</span>
+                                            </li>
+                                        )
+                                    })}
                                 </ul>
                             </div>
                         </motion.div>
@@ -168,8 +128,7 @@ const Prerequisites = () => {
                             <>
                                 <Button
                                     onClick={() => {
-                                        setExtractedRoles([]);
-                                        localStorage.removeItem('infor_extracted_roles');
+                                        clearDocumentData();
                                     }}
                                     className="bg-white/10 text-white hover:bg-white/20 border border-white/5"
                                 >
